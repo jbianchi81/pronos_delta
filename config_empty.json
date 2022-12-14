@@ -1,0 +1,15 @@
+{
+    "api": {
+        "username":"",
+        "password":"",
+        "url":"https://alerta.ina.gob.ar/a6",
+        "token": ""
+    },
+    "database": {
+        "dbname": "",
+        "user": "",
+        "host": "",
+        "port": 5432
+    }
+}
+
