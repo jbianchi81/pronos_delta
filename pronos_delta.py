@@ -796,7 +796,7 @@ def corrigeVCons(plots=False,upload=True, output_csv=False):
     ## Carga Observados
     f_inicio = df_VConstitucion_sim.index.min()
     f_fin = df_VConstitucion_sim.index.max()
-    df_VConstitucion_Obs = getObs(29436,f_inicio,f_fin)
+    df_VConstitucion_Obs = getObs(35,f_inicio,f_fin) # getObs(29436,f_inicio,f_fin)  <-- edit 2/2/2023, estacion sat2 caída, cambio a convencional
 
     # Elimina saltos
     df_VConstitucion_Obs = eliminaSaltos(df_VConstitucion_Obs,0.25)
