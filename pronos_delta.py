@@ -14,6 +14,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from dateutil import parser
 from pytz import timezone
 localtz = timezone('America/Argentina/Buenos_Aires')
+import logging
 
 """# Credenciales de la API"""
 
@@ -90,6 +91,8 @@ def getLastProno(cal_id=288,filter={}):
         headers = {'Authorization': 'Bearer ' + apiLoginParams["token"]},
     )
     json_response = response.json()
+    if not len(json_response['series']):
+        raise Exception("No series found in retrieved forecast run with filter: %s" % str(filter))
     df_sim = pd.DataFrame.from_dict(json_response['series'][0]['pronosticos'],orient='columns')
     df_sim = df_sim.rename(columns={0:'fecha',1:'fecha2',2:'h_sim',3:'main'})
     df_sim = df_sim[['fecha','h_sim']]
@@ -290,7 +293,11 @@ def corrigeZarate(plots=False, upload=True, output_csv=False):
     """# Carga los datos"""
 
     ## Carga Simulados en Zarate
-    df_Zarate_sim, fecha_emision = getLastProno(288,{'estacion_id': '5907', 'var_id': 2})
+    try:
+        df_Zarate_sim, fecha_emision = getLastProno(288,{'estacion_id': '5907', 'var_id': 2})
+    except Exception as e:
+        logging.error(e)
+        return
     print(fecha_emision)
     ## Carga Observados
 
@@ -402,7 +409,7 @@ def corrigeZarate(plots=False, upload=True, output_csv=False):
     ]
 
     # PLOT FINAL
-    plotFinal(df_Zarate_Obs,df_Zarate_sim2,'productos/Prono_Zarate.png',ydisplay=-0.75,text_xoffset=(-2,-8),xytext=(-320,-200),ylim=(-1,2.5),nombre_estacion="Zárate",niveles_alerta={"aguas_bajas":0.3},cero=0.42,fecha_emision=fecha_emision) # ,"alerta":2,"evacuacion":2.2
+    plotFinal(df_Zarate_Obs,df_Zarate_sim2,'productos/Prono_Zarate.png',ydisplay=-0.75,text_xoffset=(-2,-8),xytext=(-320,-200),ylim=(-1,3),nombre_estacion="Zárate",niveles_alerta={"aguas_bajas":0.3},cero=0.42,fecha_emision=fecha_emision) # ,"alerta":2,"evacuacion":2.2
 
     ## UPLOAD PRONOSTICO
     if upload:
@@ -419,7 +426,11 @@ def corrigeAtucha(plots=False, upload=True, output_csv=False):
     """# Carga los datos"""
 
     ## Carga Simulados en Atucha
-    df_Atucha_sim, fecha_emision = getLastProno(288,{'estacion_id': '151', 'var_id': 2})
+    try:
+        df_Atucha_sim, fecha_emision = getLastProno(288,{'estacion_id': '151', 'var_id': 2})
+    except Exception as e:
+        logging.error(e)
+        return
     print(fecha_emision)
     ## Carga Observados
 
@@ -531,8 +542,8 @@ def corrigeAtucha(plots=False, upload=True, output_csv=False):
     ]
 
     # PLOT FINAL
-    plotFinal(df_Atucha_Obs,df_Atucha_sim2,'productos_res/Prono_Atucha.png',ydisplay=0,xytext=(-420,-120),ylim=(-0.5,3.5),nombre_estacion="Atucha",fecha_emision=fecha_emision,cero=-0.53)
-    plotFinal(df_Atucha_Obs,df_Atucha_sim2,nameout='productos/Prono_Lima.png',ydisplay=0,text_xoffset=(-2,-5),xytext=(-320,-200),ylim=(-0.5,3.5),fecha_emision=fecha_emision,nombre_estacion="Lima",cero=-0.53)
+    plotFinal(df_Atucha_Obs,df_Atucha_sim2,'productos_res/Prono_Atucha.png',ydisplay=0,xytext=(-420,-120),ylim=(-0.5,4.5),nombre_estacion="Atucha",fecha_emision=fecha_emision,cero=-0.53)
+    plotFinal(df_Atucha_Obs,df_Atucha_sim2,nameout='productos/Prono_Lima.png',ydisplay=0,text_xoffset=(-2,-5),xytext=(-320,-200),ylim=(-0.5,4.5),fecha_emision=fecha_emision,nombre_estacion="Lima",cero=-0.53)
 
     if output_csv:
         outputcsv(df_Atucha_sim2,"productos_res/Prono_Atucha.csv")
@@ -546,8 +557,11 @@ def corrigeAtucha(plots=False, upload=True, output_csv=False):
 
     Carga los datos desde la api de Alerta
     """
-
-    df_Campana_sim, fecha_emision = getLastProno(288,{'estacion_id': '41', 'var_id': 2})
+    try:
+        df_Campana_sim, fecha_emision = getLastProno(288,{'estacion_id': '41', 'var_id': 2})
+    except Exception as e:
+        logging.error(e)
+        return
 
     ###### Correccion 1 el simulado en campana adelanta 1 hora
     df_Campana_sim.index = df_Campana_sim.index + timedelta(hours=1) # - timedelta(hours=2)
@@ -576,7 +590,7 @@ def corrigeAtucha(plots=False, upload=True, output_csv=False):
     series.append(prono2serie(df_Campana_sim,main_colname="Y_predic",members={'e_pred_01':'p01','e_pred_99':'p99'},series_id=3405))
 
     # PLOT FINAL
-    plotFinal(df_Campana_Obs,df_Campana_sim,nameout='productos/Prono_Campana.png',markersize=10,ydisplay=-0.75,text_xoffset=(-2,-5),xytext=(-320,-200),ylim=(-1.,2),obsLine=False,nombre_estacion="Campana", cero=0.03, fecha_emision=fecha_emision)
+    plotFinal(df_Campana_Obs,df_Campana_sim,nameout='productos/Prono_Campana.png',markersize=10,ydisplay=-0.75,text_xoffset=(-2,-5),xytext=(-320,-200),ylim=(-1.,3),obsLine=False,nombre_estacion="Campana", cero=0.03, fecha_emision=fecha_emision)
 
     if output_csv:
         outputcsv(df_Campana_sim,"productos/Prono_Campana.csv")
@@ -586,8 +600,11 @@ def corrigeAtucha(plots=False, upload=True, output_csv=False):
 
     Carga los datos desde la api de Alerta
     """
-    df_Escobar_sim, fecha_emision = getLastProno(288,{'estacion_id': '42', 'var_id': 2})
-
+    try:
+        df_Escobar_sim, fecha_emision = getLastProno(288,{'estacion_id': '42', 'var_id': 2})
+    except Exception as e:
+        logging.error(e)
+        return
     ###### Correccion 1 el simulado en zarate adelanta 2 horas 
     df_Escobar_sim.index = df_Escobar_sim.index + timedelta(hours=1) # - timedelta(hours=2)
 
@@ -632,13 +649,16 @@ def corrigeAtucha(plots=False, upload=True, output_csv=False):
 
 def corrigeRosario(plots=False,upload=True, output_csv=False):
     ## Carga Simulados en Rosario
-    df_Rosario_sim, fecha_emision = getLastProno(288,{'estacion_id': '5893','var_id':2})
-
+    try:
+        df_Rosario_sim, fecha_emision = getLastProno(288,{'estacion_id': '5893','var_id':2})
+    except Exception as e:
+        logging.error(e)
+        return
     ## Carga Observados
     f_inicio = df_Rosario_sim.index.min()
     f_fin = df_Rosario_sim.index.max()
     Estaciones = {5893:'Rosario',}
-    df_Rosario_Obs = getObs(29435,f_inicio,f_fin)
+    df_Rosario_Obs = getObs(34,f_inicio,f_fin) # 29435 caída 2023-07-12
 
     # Elimina saltos
     df_Rosario_Obs=eliminaSaltos(df_Rosario_Obs,0.25)
@@ -755,8 +775,11 @@ def corrigeRosario(plots=False,upload=True, output_csv=False):
         outputcsv(df_Rosario_sim2,"productos/Prono_Rosario.csv")
 
     """# Prediccion en Timbues"""
-    df_Timbues_sim, fecha_emision = getLastProno(288,{'estacion_id': '1770','var_id':2})
-
+    try:
+        df_Timbues_sim, fecha_emision = getLastProno(288,{'estacion_id': '1770','var_id':2})
+    except Exception as e:
+        logging.error(e)
+        return
     ###### Correccion 1 el simulado en zarate adelanta 1 hora
     df_Timbues_sim.index = df_Timbues_sim.index + timedelta(hours=1) # - timedelta(hours=2)
 
@@ -791,12 +814,15 @@ def corrigeRosario(plots=False,upload=True, output_csv=False):
 
 def corrigeVCons(plots=False,upload=True, output_csv=False):
         ## Carga Simulados en VConstitucion
-    df_VConstitucion_sim, fecha_emision = getLastProno(288,{'estacion_id': '5905','var_id':2})
-
+    try:
+        df_VConstitucion_sim, fecha_emision = getLastProno(288,{'estacion_id': '5905','var_id':2})
+    except Exception as e:
+        logging.error(e)
+        return
     ## Carga Observados
     f_inicio = df_VConstitucion_sim.index.min()
     f_fin = df_VConstitucion_sim.index.max()
-    df_VConstitucion_Obs = getObs(29436,f_inicio,f_fin)
+    df_VConstitucion_Obs = getObs(35,f_inicio,f_fin) # getObs(29436,f_inicio,f_fin)  <-- edit 2/2/2023, estacion sat2 caída, cambio a convencional
 
     # Elimina saltos
     df_VConstitucion_Obs = eliminaSaltos(df_VConstitucion_Obs,0.25)
@@ -909,9 +935,11 @@ def corrigeVCons(plots=False,upload=True, output_csv=False):
 
 
     """# Prediccion en SanNicolas"""
-
-    df_SanNicolas_sim, fecha_emision = getLastProno(288,{'estacion_id': '36','var_id':2})
-
+    try:
+        df_SanNicolas_sim, fecha_emision = getLastProno(288,{'estacion_id': '36','var_id':2})
+    except Exception as e:
+        logging.error(e)
+        return
     ###### Correccion 1 el simulado en zarate adelanta 1 hora
     df_SanNicolas_sim.index = df_SanNicolas_sim.index + timedelta(hours=1) # - timedelta(hours=2)
 
@@ -923,7 +951,7 @@ def corrigeVCons(plots=False,upload=True, output_csv=False):
     X_input = df_SanNicolas_sim[['h_sim',]].values
 
     # Prediccion
-    df_SanNicolas_sim['Y_predic'] = lr.predict(X_input)+0.25
+    df_SanNicolas_sim['Y_predic'] = lr.predict(X_input) - 0.55 # +0.25
 
     horas_plot = 24*10
     df_SanNicolas_sim = df_SanNicolas_sim[-horas_plot:]
@@ -943,7 +971,11 @@ def corrigeVCons(plots=False,upload=True, output_csv=False):
 
 
     """# Prediccion en Ramallo"""
-    df_Ramallo_sim, fecha_emision = getLastProno(288,{'estacion_id': '37','var_id':2})
+    try:
+        df_Ramallo_sim, fecha_emision = getLastProno(288,{'estacion_id': '37','var_id':2})
+    except Exception as e:
+        logging.error(e)
+        return    
     ###### Correccion 1 el simulado en zarate adelanta 1 hora
     df_Ramallo_sim.index = df_Ramallo_sim.index + timedelta(hours=1) # - timedelta(hours=2)
 
@@ -955,7 +987,7 @@ def corrigeVCons(plots=False,upload=True, output_csv=False):
     X_input = df_Ramallo_sim[['h_sim',]].values
 
     # Prediccion
-    df_Ramallo_sim['Y_predic'] = lr.predict(X_input)
+    df_Ramallo_sim['Y_predic'] = lr.predict(X_input) - 0.55
 
     horas_plot = 24*10
     df_Ramallo_sim = df_Ramallo_sim[-horas_plot:]
@@ -984,8 +1016,11 @@ def corrigeVCons(plots=False,upload=True, output_csv=False):
 
 def corrigeCarabelas(plots=False,upload=True,output_csv=False):
     ## Carga Simulados
-    df_simulado, fecha_emision = getLastProno(288,{'estacion_id': '5876','var_id':2})
-
+    try:
+        df_simulado, fecha_emision = getLastProno(288,{'estacion_id': '5876','var_id':2})
+    except Exception as e:
+        logging.error(e)
+        return
     ## Carga Observados
     f_inicio = df_simulado.index.min()
     f_fin = df_simulado.index.max()
@@ -1356,8 +1391,11 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=False):
 
 def corrigeBrazoLargo(plots=False,upload=True,output_csv=False):
     ## Carga Simulados
-    df_simulado, fecha_emision = getLastProno(288,{'estacion_id': '2830','var_id':2})
-
+    try:
+        df_simulado, fecha_emision = getLastProno(288,{'estacion_id': '2830','var_id':2})
+    except Exception as e:
+        logging.error(e)
+        return
     ## Carga Observados
     f_inicio = df_simulado.index.min()
     f_fin = df_simulado.index.max()
