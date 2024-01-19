@@ -1,0 +1,9 @@
+requests
+psycopg2
+pandas
+numpy
+datetime
+matplotlib
+scikit-learn
+python-dateutil
+pytz
