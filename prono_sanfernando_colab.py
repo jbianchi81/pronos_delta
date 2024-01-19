@@ -45,7 +45,7 @@ f_inicio = (f_fin - timedelta(days=DaysMod)).replace(hour=0, minute=0, second=0)
 
 plotea = False
 
-unid_margen_derecha = 85
+unid_margen_derecha = 52 # 85
 
 # OBSERVADOS
 #Parametros para la consulta SQL a la BBDD
