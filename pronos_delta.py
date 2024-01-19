@@ -43,7 +43,7 @@ def prono2serie(df,main_colname="h_sim",members={'e_pred_01':'p01','e_pred_99':'
     for member in members:
         column_mapper = { 'fecha': 'timestart'}
         column_mapper[member] = "valor"
-        df_para_upsert = df_para_upsert.append(df_simulado[['fecha',member]].rename(axis=1, mapper=column_mapper), ignore_index=True)
+        df_para_upsert = pd.concat([df_para_upsert, df_simulado[['fecha',member]].rename(axis=1, mapper=column_mapper)], ignore_index=True)
         df_para_upsert['qualifier'].fillna(value=members[member],inplace=True)
     df_para_upsert['timeend'] = df_para_upsert['timestart']  # .map(lambda a : a.isoformat())
     return {
@@ -1188,7 +1188,8 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=False):
   df_Sim0['fecha_emision'] =  pd.to_datetime(df_Sim0['fecha_emision'])
 
   # Calcula la cantidad de horas de pronóstico (anticipo): fecha del dato menos fecha de emision
-  df_Sim0['horas_prono'] = (df_Sim0['fecha'] - df_Sim0['fecha_emision']).astype('timedelta64[h]')
+#   df_Sim0['horas_prono'] = (df_Sim0['fecha'] - df_Sim0['fecha_emision']).astype('timedelta64[h]')
+  df_Sim0['horas_prono'] = ((df_Sim0['fecha'] - df_Sim0['fecha_emision']) / pd.Timedelta(hours=1)).astype(int)
   # Hora del pronostico
   df_Sim0['hora'] = df_Sim0.apply(lambda row: row['fecha'].hour,axis=1)
 
