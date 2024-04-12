@@ -1506,7 +1506,7 @@ def runPlan(plan,plots=True,upload=False,output_csv=False):
         "rosario": corrigeRosario,
         "vcons": corrigeVCons,
         "carabelas": corrigeCarabelas,
-        "npalmira": corrigeNuevaPalmira,
+        #"npalmira": corrigeNuevaPalmira,
         "blargo": corrigeBrazoLargo
     }
     if plan in ("all","All","ALL"):
