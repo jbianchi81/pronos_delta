@@ -40,9 +40,9 @@ def readSerie(series_id,timestart=None,timeend=None,tipo="puntual",use_proxy=Fal
             "timestart": timestart if isinstance(timestart,str) else timestart.isoformat(),
             "timeend": timeend if isinstance(timestart,str) else timeend.isoformat()
         }
-    response = requests.get("%s/obs/%s/series/%i" % (config["api"]["url"], tipo, series_id),
+    response = requests.get("%s/obs/%s/series/%i" % (apiLoginParams["url"], tipo, series_id),
         params = params,
-        headers = {'Authorization': 'Bearer ' + config["api"]["token"]},
+        headers = {'Authorization': 'Bearer ' + apiLoginParams["token"]},
         proxies = config["proxy_dict"] if use_proxy else None
     )
     if response.status_code != 200:
@@ -73,17 +73,17 @@ def tryParseAndLocalizeDate(date_string,timezone='America/Argentina/Buenos_Aires
 def Consulta_id_corridas(id0):
     ## Carga Simulados
     response = requests.get(
-        'https://alerta.ina.gob.ar/a6/sim/calibrados/'+str(id0)+'/corridas',
+        '%s/sim/calibrados/%i/corridas' % (apiLoginParams["url"], id0),
         params={'qualifier':'main','includeProno':False},
-        headers={'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlNhbnRpYWdvIEd1aXp6YXJkaSIsImlhdCI6MTUxNjIzOTAyMn0.YjqQYMCh4AIKSsSEq-QsTGz3Q4WOS5VE-CplGQdInfQ'},)
+        headers={'Authorization': 'Bearer %s' % apiLoginParams["token"]},)
     json_response = response.json()
     return json_response
 
 def cargasim(id_modelo,corrida_id,estacion_id): ## Consulta los pronosticos
     ## Carga Simulados
     response = requests.get(
-        'https://alerta.ina.gob.ar/a6/sim/calibrados/'+str(id_modelo)+'/corridas/'+str(corrida_id)+'?estacion_id='+str(estacion_id)+'&includeProno=true',
-        headers = {'Authorization': 'Bearer ' + config["api"]["token"]})    
+        '%s/sim/calibrados/%i/corridas/%i?estacion_id=%i&includeProno=true' % (apiLoginParams["url"], id_modelo,  corrida_id, estacion_id ),
+        headers = {'Authorization': 'Bearer ' + apiLoginParams["token"]})    
         #params={'qualifier':'main','estacion_id':str(estacion_id),'includeProno':True},
 
     json_response = response.json()
