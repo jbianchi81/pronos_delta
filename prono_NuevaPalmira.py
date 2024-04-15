@@ -282,7 +282,7 @@ def uploadPronoSeries(series,cal_id=440,forecast_date=datetime.now(),outputfile=
     data = prono2json(series,forecast_date)
     if(outputfile):
         outputjson(data,outputfile)
-        uploadProno(data,cal_id,responseOutputFile)
+    uploadProno(data,cal_id,responseOutputFile)
 
 
 def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
@@ -485,7 +485,7 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
         data = prono2json(series,forecast_date=fecha_emision)
         outputjson(data,"productos/prono_NuevaPalmira.json")
 
-corrigeNuevaPalmira(plots=False,upload=False,output_csv=True)
+corrigeNuevaPalmira(plots=False,upload=True,output_csv=True)
 
 
 
