@@ -217,10 +217,11 @@ def plotFinal(df_obs,df_sim,nameout='productos/plot_final.png',titulo='puerto',y
         connectionstyle="angle,angleA=0,angleB=90,rad=10")
     offset = 10
     #xycoords='figure pixels',
-    xdisplay = ahora + timedelta(days=1.0)
-    ax.annotate('Pronóstico a 4 días',
+    xdisplay = ahora + timedelta(days=0.1) # 1.0)
+    ax.annotate('ATENCIÓN: Pronóstico desactualizado', # 'Pronóstico a 4 días',
         xy=(xdisplay, ydisplay), xytext=(text_xoffset[0]*offset, -offset), textcoords='offset points',
-        bbox=bbox, fontsize=18)#arrowprops=arrowprops
+        bbox=bbox, fontsize=18,
+        color='red')#arrowprops=arrowprops
     xdisplay = ahora - timedelta(days=2)
     ax.annotate('Días pasados',
         xy=(xdisplay, ydisplay), xytext=(text_xoffset[1]*offset, -offset), textcoords='offset points',
@@ -928,7 +929,7 @@ def corrigeVCons(plots=False,upload=True, output_csv=False):
     df_VConstitucionPNA_Obs = getObs(35,f_inicio,f_fin)
 
     # PLOT FINAL
-    plotFinal(df_VConstitucionPNA_Obs,df_VConstitucion_sim2,nameout='productos/Prono_VConstitucionPNA.png',ydisplay=1.5,text_xoffset=(-.5,.5),xytext=(-320,-200),ylim=(-1.,6),bandaDeError=('e_pred_05','e_pred_95'),extraObs=df_VConstitucion_Obs,extraObsLabel='Nivel Observado BDHI',obs_label='Nivel Observado PNA',fecha_emision=fecha_emision,obsLine=False,nombre_estacion="Villa Constitución",niveles_alerta={"aguas_bajas":1.9}, cero=1.98)
+    plotFinal(df_VConstitucionPNA_Obs,df_VConstitucion_sim2,nameout='productos/Prono_VConstitucionPNA.png',ydisplay=2.3,text_xoffset=(-.5,.5),xytext=(-320,-200),ylim=(-1.,6),bandaDeError=('e_pred_05','e_pred_95'),extraObs=df_VConstitucion_Obs,extraObsLabel='Nivel Observado BDHI',obs_label='Nivel Observado PNA',fecha_emision=fecha_emision,obsLine=False,nombre_estacion="Villa Constitución",niveles_alerta={"aguas_bajas":1.9}, cero=1.98)
 
     if output_csv:
         outputcsv(df_VConstitucion_sim2,"productos/Prono_VConstitucion.csv")
