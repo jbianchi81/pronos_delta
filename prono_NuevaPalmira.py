@@ -156,9 +156,10 @@ def plotFinal(df_obs,df_sim,nameout='productos/plot_final.png',titulo='puerto',y
     offset = 10
     #xycoords='figure pixels',
     xdisplay = ahora + timedelta(days=1.0)
-    ax.annotate('Pronóstico a 4 días',
+    ax.annotate( 'ATENCIÓN: pronóstico desactualizado', # 'Pronóstico a 4 días',
         xy=(xdisplay, ydisplay), xytext=(text_xoffset[0]*offset, -offset), textcoords='offset points',
-        bbox=bbox, fontsize=18)#arrowprops=arrowprops
+        bbox=bbox, fontsize=18,
+        color = "red")#arrowprops=arrowprops
     xdisplay = ahora - timedelta(days=2)
     ax.annotate('Días pasados',
         xy=(xdisplay, ydisplay), xytext=(text_xoffset[1]*offset, -offset), textcoords='offset points',
@@ -469,7 +470,7 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
     df_Sim['fecha'] = df_Sim.index
 
     # PLOT FINAL
-    plotFinal(df_Obs,df_Sim,ydisplay=3.4,text_xoffset=(0.5,0.5),ylim=(-0.5,3.5),nameout='productos/Prono_NPalmira.png',nombre_estacion="NuevaPalmira",cero=None,fecha_emision=fecha_emision)
+    plotFinal(df_Obs,df_Sim,ydisplay=2.5,text_xoffset=(0.5,0.5),ylim=(-0.5,3.5),nameout='productos/Prono_NPalmira.png',nombre_estacion="NuevaPalmira",cero=None,fecha_emision=fecha_emision)
 
     if output_csv:
         outputcsv(df_Sim,"productos/prono_NuevaPalmira.csv")
@@ -485,7 +486,7 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
         data = prono2json(series,forecast_date=fecha_emision)
         outputjson(data,"productos/prono_NuevaPalmira.json")
 
-corrigeNuevaPalmira(plots=False,upload=True,output_csv=True)
+corrigeNuevaPalmira(plots=False,upload=False,output_csv=True)
 
 
 
