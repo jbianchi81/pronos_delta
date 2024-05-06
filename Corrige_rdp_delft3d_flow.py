@@ -24,8 +24,14 @@ from Funciones import outputcsv, prono2serie, uploadPronoSeries, prono2json,outp
 Dic_Estaciones = {'id_modelo':443,
                   'id_modelo_corr':543,
                   'DiasCorreccion':10,
-                  'Estaciones': {'San Fernando': {'estacion_id':52,'obs_id': 52,'Nombre_out':'SanFernando'},
-                                  'Nueva Palmira': {'estacion_id':1699,'obs_id': 31555,'Nombre_out':'NuevaPalmira'}}}
+                  'Estaciones': {'San Fernando': {'estacion_id':52,
+                                                  'obs_id': 52,
+                                                  'series_id_save':26202,
+                                                  'Nombre_out':'SanFernando'},
+                                  'Nueva Palmira': {'estacion_id':1699,
+                                                    'obs_id': 31555,
+                                                    'series_id_save':26203,
+                                                    'Nombre_out':'NuevaPalmira'}}}
 
 def corrigeSalidaModelo(est,Dic_Estaciones,plots=False,upload=True,output_csv=True,PlotControl=True):
     id_modelo = Dic_Estaciones['id_modelo']
@@ -37,6 +43,9 @@ def corrigeSalidaModelo(est,Dic_Estaciones,plots=False,upload=True,output_csv=Tr
     estacion_id = Dic_Estaciones['Estaciones'][est]['estacion_id']
     obs_id = Dic_Estaciones['Estaciones'][est]['obs_id']
     Nombre_out = Dic_Estaciones['Estaciones'][est]['Nombre_out']
+
+    series_id_save = Dic_Estaciones['Estaciones'][est]['series_id_save']
+
 
     ## Consulta id de las corridas
     DiasCorreccion = Dic_Estaciones['DiasCorreccion']
@@ -200,7 +209,7 @@ def corrigeSalidaModelo(est,Dic_Estaciones,plots=False,upload=True,output_csv=Tr
         outputcsv(df_Sim,"productos/prono_NuevaPalmira.csv")
 
     series = [
-        prono2serie(df_Sim,main_colname="Y_predic",members={'e_pred_01':'p01','e_pred_99':'p99'},series_id=26203)
+        prono2serie(df_Sim,main_colname="Y_predic",members={'e_pred_01':'p01','e_pred_99':'p99'},series_id=series_id_save)
     ]
 
     ## UPLOAD PRONOSTICO
@@ -213,5 +222,5 @@ def corrigeSalidaModelo(est,Dic_Estaciones,plots=False,upload=True,output_csv=Tr
 
 for est in Dic_Estaciones['Estaciones'].keys():
     print(est)
-    corrigeSalidaModelo(est,Dic_Estaciones,plots=False,upload=False,output_csv=True)
+    corrigeSalidaModelo(est,Dic_Estaciones,plots=False,upload=True,output_csv=True)
 
