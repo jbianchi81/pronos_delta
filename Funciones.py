@@ -13,23 +13,12 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.dates import DateFormatter
 
-from sklearn import datasets, linear_model
-from sklearn.metrics import mean_squared_error, r2_score
-
 from pytz import timezone
 localtz = timezone('America/Argentina/Buenos_Aires')
 
-
-''' import sys, getopt
-    #import seaborn as sns
-    from dateutil import parser
-    import logging
-    import psycopg2
-'''
-
 """# Credenciales de la API"""
 
-with open("config.json") as f:
+with open("Configuracion/config.json") as f:
     config = json.load(f)
 apiLoginParams = config["api"]
 
@@ -40,9 +29,9 @@ def readSerie(series_id,timestart=None,timeend=None,tipo="puntual",use_proxy=Fal
             "timestart": timestart if isinstance(timestart,str) else timestart.isoformat(),
             "timeend": timeend if isinstance(timestart,str) else timeend.isoformat()
         }
-    response = requests.get("%s/obs/%s/series/%i" % (apiLoginParams["url"], tipo, series_id),
+    response = requests.get("%s/obs/%s/series/%i" % (config["api"]["url"], tipo, series_id),
         params = params,
-        headers = {'Authorization': 'Bearer ' + apiLoginParams["token"]},
+        headers = {'Authorization': 'Bearer ' + config["api"]["token"]},
         proxies = config["proxy_dict"] if use_proxy else None
     )
     if response.status_code != 200:
@@ -70,20 +59,20 @@ def tryParseAndLocalizeDate(date_string,timezone='America/Argentina/Buenos_Aires
         date = date.astimezone(pytz.timezone(timezone))
     return date
 
-def Consulta_id_corridas(id0):
+def Consulta_id_corridas(id0_modelo):
     ## Carga Simulados
     response = requests.get(
-        '%s/sim/calibrados/%i/corridas' % (apiLoginParams["url"], id0),
+        'https://alerta.ina.gob.ar/a6/sim/calibrados/'+str(id0_modelo)+'/corridas',
         params={'qualifier':'main','includeProno':False},
-        headers={'Authorization': 'Bearer %s' % apiLoginParams["token"]},)
+        headers={'Authorization': 'Bearer ' + config["api"]["token"]},)
     json_response = response.json()
     return json_response
 
 def cargasim(id_modelo,corrida_id,estacion_id): ## Consulta los pronosticos
     ## Carga Simulados
     response = requests.get(
-        '%s/sim/calibrados/%i/corridas/%i?estacion_id=%i&includeProno=true' % (apiLoginParams["url"], id_modelo,  corrida_id, estacion_id ),
-        headers = {'Authorization': 'Bearer ' + apiLoginParams["token"]})    
+        'https://alerta.ina.gob.ar/a6/sim/calibrados/'+str(id_modelo)+'/corridas/'+str(corrida_id)+'?estacion_id='+str(estacion_id)+'&includeProno=true',
+        headers = {'Authorization': 'Bearer ' + config["api"]["token"]})    
         #params={'qualifier':'main','estacion_id':str(estacion_id),'includeProno':True},
 
     json_response = response.json()
@@ -187,7 +176,7 @@ def plotFinal(df_obs,df_sim,nameout='productos/plot_final.png',titulo='puerto',y
     df_prono['Hora'] = df_prono.index.hour
     df_prono['Dia'] = df_prono.index.day
     df_prono = df_prono[df_prono['Hora'].isin(h_resumne)].copy()
-    print(df_prono)
+    #print(df_prono)
     df_prono['Y_predic'] = df_prono['Y_predic'].round(2)
     df_prono['Hora'] = df_prono['Hora'].astype(str)
     df_prono['Hora'] = df_prono['Hora'].replace('0', '00')
@@ -195,7 +184,7 @@ def plotFinal(df_obs,df_sim,nameout='productos/plot_final.png',titulo='puerto',y
     df_prono['Dia'] = df_prono['Dia'].astype(str)
     df_prono['Fechap'] = df_prono['Dia']+' '+df_prono['Hora']+'hrs'
     df_prono = df_prono[['Fechap','Y_predic',]]
-    print(df_prono)
+    #print(df_prono)
     cell_text = []
     for row in range(len(df_prono)):
         cell_text.append(df_prono.iloc[row])
@@ -282,210 +271,4 @@ def uploadPronoSeries(series,cal_id=440,forecast_date=datetime.now(),outputfile=
     data = prono2json(series,forecast_date)
     if(outputfile):
         outputjson(data,outputfile)
-    uploadProno(data,cal_id,responseOutputFile)
-
-def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
-    ## Consulta id de las corridas
-    id_modelo = 308 
-    estacion_id = 1843
-
-    ahora = datetime.now(pytz.timezone('America/Argentina/Buenos_Aires')).replace(hour=0, minute=0, second=0, microsecond=0)
-    fecha_pronos_calib = ahora - timedelta(days=7) # Corrige con los ultimos x días
-
-    ##################### Conulta Simulado #####################
-
-    # 1 - Consulta ID Corridas
-    json_res = Consulta_id_corridas(id_modelo)
-    print('Cantidad de corridas: ',len(json_res))
-    
-    lst_corridas = []
-    lst_pronoday = []
-    for corridas in range(len(json_res)):
-        lst_corridas.append(json_res[corridas]['cor_id'])
-        lst_pronoday.append(json_res[corridas]['forecast_date'])
-    df_id = pd.DataFrame(lst_pronoday, index =lst_corridas,columns=['forecast_date',])
-    df_id['forecast_date'] = pd.to_datetime(df_id['forecast_date'])
-    df_id = df_id[df_id['forecast_date']>fecha_pronos_calib]            # Filtra las corridas viejas
-
-    # 2 - Consulta Corridas
-    df_base_unico = pd.DataFrame(columns=['h_sim','cor_id'])
-    for index, row in df_id.iterrows():                         # Carga las series simuladas usnado los ID de las corridas
-        df_corr_i = cargasim(id_modelo,index,estacion_id)
-        if df_corr_i.empty: continue
-        df_corr_i.set_index(df_corr_i['fecha'], inplace=True)
-        # df_corr_i.index = df_corr_i.index.tz_convert(None) - timedelta(hours=3)
-        # df_corr_i['fecha'] = df_corr_i.index
-        # df_corr_i.reset_index(drop=True)
-        #df_base = pd.concat([df_base, df_corr_i], ignore_index=True)
-
-        df_base_unico.update(df_corr_i)                         # Actualiza los pronos 
-        df_base_unico = pd.concat([df_base_unico, df_corr_i[~df_corr_i.index.isin(df_base_unico.index)]])   # guarda los nuevos
-
-    ##################### Conulta Observado #####################
-    f_inicio = df_base_unico.index.min()
-    f_fin = df_base_unico.index.max()
-
-    #Est_Uruguay = {3280:'NuevaPalmira',80:'Colon'}
-
-    df_obs_npal = readSerie(3280,f_inicio,f_fin)
-    df_obs_npal = observacionesListToDataFrame(df_obs_npal["observaciones"])
-    df_obs_npal["series_id"] = 3280
-    df_obs_npal = df_obs_npal.rename(columns={'valor':'h_obs'})
-
-    '''
-    df_obs_col = readSerie(80,f_inicio,f_fin)
-    df_obs_col = observacionesListToDataFrame(df_obs_col["observaciones"])
-    df_obs_col["series_id"] = 80
-
-    df_obs = pd.concat([df_obs_npal,df_obs_col])
-    df_Obs = pd.pivot_table(df_obs, values='h_obs', index=['fecha'], columns=['series_id'])
-
-    print("Resample horario")
-    df_Obs_H = df_Obs.resample('H').mean()
-
-    # Nombres a los calumnas
-    df_Obs_H = df_Obs_H.rename(columns=Est_Uruguay)
-
-    # tz-aware to tz-naive
-    df_Obs_H.index = pd.to_datetime(df_Obs_H.index).tz_convert('-03:00').tz_localize(None)
-    '''    
-    ### PRIMERA CORRECCION
-    df_base_unico.index = df_base_unico.index + timedelta(hours=2)
-
-    ## Union 
-    # #Crea DF base:
-    # indexUnico = pd.date_range(start=df_Sim0['fecha'].min(), end=df_Sim0['fecha'].max(), freq='H')	    #Fechas desde f_inicio a f_fin con un paso de 5 minutos
-    # df_base = pd.DataFrame(index = indexUnico)								#Crea el Df con indexUnico
-    # df_base.index.rename('fecha', inplace=True)							    #Cambia nombre incide por Fecha
-    # df_base.index = df_base.index.round("H")
-
-    # Une obs y sim
-    df_base_unico = df_base_unico.join(df_obs_npal, how = 'left')
-    df_base_unico = df_base_unico.dropna().copy()    
-    # print(df_base_unico.head())
-
-    # df_base['CUru_dly'] = df_base['Colon'].shift(24*4)
-    # df_base['CUru_dly'] = df_base['CUru_dly'].interpolate(limit_direction="forward")
-
-    # df_base['h_met_Mavg'] = df_base['A01'].rolling(24, min_periods=1).mean()
-
-    # del df_base['Colon']
-    # df_base = df_base.dropna()
-
-    print('Cantidad de datos de entrenamiento:',len(df_base_unico))
-    #print(df_base.tail(5))
-    ###########################
-
-    ## Modelo
-    print(df_base_unico.head())
-
-    train = df_base_unico[:].copy()
-    var_obj = 'h_obs'
-    covariav = ['h_sim',]#['altura_astro','A01','h_met_Mavg','CUru_dly']
-    lr = linear_model.LinearRegression()
-    X_train = train[covariav]
-    Y_train = train[var_obj]
-    lr.fit(X_train,Y_train)
-
-    # Create the test features dataset (X_test) which will be used to make the predictions.
-    X_test = train[covariav].values 
-    # The labels of the model
-    Y_test = train[var_obj].values
-    Y_predictions = lr.predict(X_test)
-    train['Y_predictions'] = Y_predictions
-
-    # The coefficients
-    print('Coefficients B0: \n', lr.intercept_)
-    print('Coefficients: \n', lr.coef_)
-
-    # The mean squared error
-    mse = mean_squared_error(Y_test, Y_predictions)
-    print('Mean squared error: %.5f' % mse)
-    # The coefficient of determination: 1 is perfect prediction
-    coefDet = r2_score(Y_test, Y_predictions)
-    print('r2_score: %.5f' % coefDet)
-    train['Error_pred'] =  train['Y_predictions']  - train[var_obj]
-
-    quant_Err = train['Error_pred'].quantile([.01,.05,.95,.99])
-
-    #############   Pronóstico  #############
-    
-    # Cosulta ultimo prono sin corregir
-    index = df_id.index.max()
-    fecha_emision = df_id.loc[index,'forecast_date']
-
-
-    df_last_prono = pd.DataFrame(columns=['h_sim','cor_id'])
-    df_id_last = df_id[-4:]
-
-    for index, row in df_id_last.iterrows():                         # Carga las series simuladas usnado los ID de las corridas
-        df_corr_i = cargasim(id_modelo,index,estacion_id)
-        if df_corr_i.empty: continue
-        df_corr_i.set_index(df_corr_i['fecha'], inplace=True)
-        # df_corr_i.index = df_corr_i.index.tz_convert(None) - timedelta(hours=3)
-        # df_corr_i['fecha'] = df_corr_i.index
-        # df_corr_i.reset_index(drop=True)
-        #df_base = pd.concat([df_base, df_corr_i], ignore_index=True)
-
-        df_last_prono.update(df_corr_i)                         # Actualiza los pronos 
-        df_last_prono = pd.concat([df_last_prono, df_corr_i[~df_corr_i.index.isin(df_last_prono.index)]])   # guarda los nuevos
-    
-    #print(df_last_prono.cor_id.unique())
-    df_last_prono.index = df_last_prono.index + timedelta(hours=2)
-    df_last_prono = df_last_prono[['h_sim',]]
-
-    # print(df_obs_npal.head())
-    # print(df_last_prono.head())
-
-    covariav = ['h_sim',]
-    prediccion = lr.predict(df_last_prono[covariav].values)
-    df_last_prono['Y_predic'] = prediccion
-    
-    # fig = plt.figure(figsize=(15, 8))
-    # ax = fig.add_subplot(1, 1, 1)
-    
-    # ax.plot(df_base_unico.index, df_base_unico['h_obs'],'.',label='Nueva Palmira')    
-    # # ax.plot(df_obs_col.index, df_obs_col['valor'],'-',label='Colon')
-    # ax.plot(df_base_unico.index, df_base_unico['h_sim'],label='h_sim')
-    # ax.plot(df_last_prono.index, df_last_prono['h_sim'],label='Last Prono')
-    # ax.plot(df_last_prono.index, df_last_prono['Y_predic'],label='Last Prono Corregido')
-
-    # plt.grid(True,axis='y', which='both', color='0.75', linestyle='-.',linewidth=0.3)
-    # plt.tick_params(axis='y', labelsize=14)
-    # plt.tick_params(axis='x', labelsize=14,rotation=20)
-    # plt.xlabel('Mes', size=18)
-    # plt.ylabel('Nivel [m]', size=18)# 'Caudal [m'+r'$^3$'+'/s]'
-    # plt.legend(prop={'size':16},loc=0,ncol=1)
-    # plt.show()
-    # plt.close()
-        
-    df_last_prono['e_pred_01'] = df_last_prono['Y_predic'] + quant_Err[0.01]
-    df_last_prono['e_pred_99'] = df_last_prono['Y_predic'] + quant_Err[0.99]
-    
-    df_Obs = df_obs_npal[['h_obs',]]    # df_Obs = df_Obs.rename(columns={'NuevaPalmira':'h_obs'})
-    df_Sim = df_last_prono[['Y_predic','e_pred_01','e_pred_99']].copy()
-    df_Sim.index = df_Sim.index.to_pydatetime()
-    df_Sim['fecha'] = df_Sim.index
-
-    # PLOT FINAL
-    plotFinal(df_Obs,df_Sim,ydisplay=3.4,text_xoffset=(0.5,0.5),ylim=(-0.5,3.5),nameout='productos/Prono_NPalmira.png',nombre_estacion="NuevaPalmira",cero=None,fecha_emision=fecha_emision)
-
-    if output_csv:
-        outputcsv(df_Sim,"productos/prono_NuevaPalmira.csv")
-
-    series = [
-        prono2serie(df_Sim,main_colname="Y_predic",members={'e_pred_01':'p01','e_pred_99':'p99'},series_id=26203)
-    ]
-
-    ## UPLOAD PRONOSTICO
-    if upload:
-        uploadPronoSeries(series,cal_id=433,forecast_date=fecha_emision,outputfile="productos/prono_NuevaPalmira.json",responseOutputFile="productos/pronoresponse.json")
-    else:
-        data = prono2json(series,forecast_date=fecha_emision)
-        outputjson(data,"productos/prono_NuevaPalmira.json")
-
-corrigeNuevaPalmira(plots=False,upload=True,output_csv=True)
-
-
-
-
+        uploadProno(data,cal_id,responseOutputFile)
