@@ -176,7 +176,7 @@ def plotFinal(df_obs,df_sim,nameout='productos/plot_final.png',titulo='puerto',y
     df_prono['Hora'] = df_prono.index.hour
     df_prono['Dia'] = df_prono.index.day
     df_prono = df_prono[df_prono['Hora'].isin(h_resumne)].copy()
-    print(df_prono)
+    #print(df_prono)
     df_prono['Y_predic'] = df_prono['Y_predic'].round(2)
     df_prono['Hora'] = df_prono['Hora'].astype(str)
     df_prono['Hora'] = df_prono['Hora'].replace('0', '00')
@@ -184,7 +184,7 @@ def plotFinal(df_obs,df_sim,nameout='productos/plot_final.png',titulo='puerto',y
     df_prono['Dia'] = df_prono['Dia'].astype(str)
     df_prono['Fechap'] = df_prono['Dia']+' '+df_prono['Hora']+'hrs'
     df_prono = df_prono[['Fechap','Y_predic',]]
-    print(df_prono)
+    #print(df_prono)
     cell_text = []
     for row in range(len(df_prono)):
         cell_text.append(df_prono.iloc[row])

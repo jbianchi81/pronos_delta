@@ -11,6 +11,8 @@ from sklearn.metrics import mean_squared_error, r2_score
 
 from Funciones import Consulta_id_corridas, cargasim, readSerie
 from Funciones import observacionesListToDataFrame, plotFinal
+from Funciones import outputcsv, prono2serie, uploadPronoSeries, prono2json,outputjson
+
 # import json
 # import datetime
 # import requests
@@ -20,18 +22,21 @@ from Funciones import observacionesListToDataFrame, plotFinal
 # from matplotlib.dates import DateFormatter
 
 Dic_Estaciones = {'id_modelo':443,
+                  'id_modelo_corr':543,
                   'DiasCorreccion':10,
-                  'Estaciones': {'San Fernando': {'estacion_id':52,'obs_id': 52},
-                                  'Nueva Palmira': {'estacion_id':1699,'obs_id': 31555}}}
+                  'Estaciones': {'San Fernando': {'estacion_id':52,'obs_id': 52,'Nombre_out':'SanFernando'},
+                                  'Nueva Palmira': {'estacion_id':1699,'obs_id': 31555,'Nombre_out':'NuevaPalmira'}}}
 
-def corrigeSalidaModelo(Dic_Estaciones,plots=False,upload=True,output_csv=True):
+def corrigeSalidaModelo(est,Dic_Estaciones,plots=False,upload=True,output_csv=True,PlotControl=True):
     id_modelo = Dic_Estaciones['id_modelo']
-    print('cal_id: ', id_modelo)
+    id_modelo_corr = Dic_Estaciones['id_modelo_corr']
+    
+    print('Modelo Original - cal_id: ', id_modelo,
+          'Modelo Corregido - cal_id: ', id_modelo_corr,)
 
-    est = 'San Fernando'
     estacion_id = Dic_Estaciones['Estaciones'][est]['estacion_id']
     obs_id = Dic_Estaciones['Estaciones'][est]['obs_id']
-
+    Nombre_out = Dic_Estaciones['Estaciones'][est]['Nombre_out']
 
     ## Consulta id de las corridas
     DiasCorreccion = Dic_Estaciones['DiasCorreccion']
@@ -99,8 +104,8 @@ def corrigeSalidaModelo(Dic_Estaciones,plots=False,upload=True,output_csv=True):
     ###########################
 
     ## Modelo
-    print(df_base_unico.head())
-    print(df_base_unico.tail())
+    # print(df_base_unico.head())
+    # print(df_base_unico.tail())
 
     train = df_base_unico[:].copy()
     var_obj = 'h_obs'
@@ -154,7 +159,6 @@ def corrigeSalidaModelo(Dic_Estaciones,plots=False,upload=True,output_csv=True):
     #print(df_last_prono.cor_id.unique())
     #df_last_prono.index = df_last_prono.index + timedelta(hours=2)
     df_last_prono = df_last_prono[['h_sim',]]
-
     # print(df_obs_npal.head())
     # print(df_last_prono.head())
 
@@ -162,23 +166,24 @@ def corrigeSalidaModelo(Dic_Estaciones,plots=False,upload=True,output_csv=True):
     prediccion = lr.predict(df_last_prono[covariav].values)
     df_last_prono['Y_predic'] = prediccion
     
-    fig = plt.figure(figsize=(15, 8))
-    ax = fig.add_subplot(1, 1, 1)
+    if PlotControl:
+        fig = plt.figure(figsize=(15, 8))
+        ax = fig.add_subplot(1, 1, 1)
 
-    ax.plot(df_base_unico.index, df_base_unico['h_obs'],'.',label='Nueva Palmira')    
-    ax.plot(train.index, train['Y_predictions'],'-',label='Y_predictions')
-    ax.plot(df_base_unico.index, df_base_unico['h_sim'],label='h_sim')
-    ax.plot(df_last_prono.index, df_last_prono['h_sim'],label='Last Prono')
-    ax.plot(df_last_prono.index, df_last_prono['Y_predic'],label='Last Prono Corregido')
+        ax.plot(df_base_unico.index, df_base_unico['h_obs'],'.',label='Nueva Palmira')    
+        ax.plot(train.index, train['Y_predictions'],'-',label='Y_predictions')
+        ax.plot(df_base_unico.index, df_base_unico['h_sim'],label='h_sim')
+        ax.plot(df_last_prono.index, df_last_prono['h_sim'],label='Last Prono')
+        ax.plot(df_last_prono.index, df_last_prono['Y_predic'],label='Last Prono Corregido')
 
-    plt.grid(True,axis='y', which='both', color='0.75', linestyle='-.',linewidth=0.3)
-    plt.tick_params(axis='y', labelsize=14)
-    plt.tick_params(axis='x', labelsize=14,rotation=20)
-    plt.xlabel('Mes', size=18)
-    plt.ylabel('Nivel [m]', size=18)# 'Caudal [m'+r'$^3$'+'/s]'
-    plt.legend(prop={'size':16},loc=0,ncol=1)
-    plt.show()
-    plt.close()
+        plt.grid(True,axis='y', which='both', color='0.75', linestyle='-.',linewidth=0.3)
+        plt.tick_params(axis='y', labelsize=14)
+        plt.tick_params(axis='x', labelsize=14,rotation=20)
+        plt.xlabel('Mes', size=18)
+        plt.ylabel('Nivel [m]', size=18)# 'Caudal [m'+r'$^3$'+'/s]'
+        plt.legend(prop={'size':16},loc=0,ncol=1)
+        plt.show()
+        plt.close()
 
     df_last_prono['e_pred_01'] = df_last_prono['Y_predic'] + quant_Err[0.01]
     df_last_prono['e_pred_99'] = df_last_prono['Y_predic'] + quant_Err[0.99]
@@ -190,9 +195,7 @@ def corrigeSalidaModelo(Dic_Estaciones,plots=False,upload=True,output_csv=True):
 
     # PLOT FINAL
     plotFinal(df_Obs,df_Sim,ydisplay=3.4,text_xoffset=(0.5,0.5),ylim=(-0.5,3.5),nameout='productos/Prono_NPalmira.png',nombre_estacion="NuevaPalmira",cero=None,fecha_emision=fecha_emision)
-    
 
-    quit()
     if output_csv:
         outputcsv(df_Sim,"productos/prono_NuevaPalmira.csv")
 
@@ -202,9 +205,13 @@ def corrigeSalidaModelo(Dic_Estaciones,plots=False,upload=True,output_csv=True):
 
     ## UPLOAD PRONOSTICO
     if upload:
-        uploadPronoSeries(series,cal_id=433,forecast_date=fecha_emision,outputfile="productos/prono_NuevaPalmira.json",responseOutputFile="productos/pronoresponse.json")
+        uploadPronoSeries(series,cal_id=id_modelo_corr,forecast_date=fecha_emision,outputfile="productos/prono_"+Nombre_out+".json",responseOutputFile="productos/pronoresponse.json")
     else:
         data = prono2json(series,forecast_date=fecha_emision)
-        outputjson(data,"productos/prono_NuevaPalmira.json")
+        outputjson(data,"productos/prono_"+Nombre_out+".json")
 
-corrigeSalidaModelo(Dic_Estaciones,plots=False,upload=False,output_csv=True)
+
+for est in Dic_Estaciones['Estaciones'].keys():
+    print(est)
+    corrigeSalidaModelo(est,Dic_Estaciones,plots=False,upload=False,output_csv=True)
+
