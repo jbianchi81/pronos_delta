@@ -29,7 +29,7 @@ import json
 import locale
 
 # set locale for date formatting
-locale.setlocale(locale.LC_ALL,"es_AR")
+locale.setlocale(locale.LC_ALL,"es_AR.utf8")
 
 with open("config.json") as f:
 	config = json.load(f)
