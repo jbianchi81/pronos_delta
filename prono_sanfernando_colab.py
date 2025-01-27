@@ -26,6 +26,11 @@ from sklearn.metrics import mean_squared_error, r2_score
 import requests
 import json
 
+import locale
+
+# set locale for date formatting
+locale.setlocale(locale.LC_ALL,"es_AR")
+
 with open("config.json") as f:
 	config = json.load(f)
 
@@ -338,13 +343,13 @@ for i in df_simulado.index:
 # df para UPSERT
 df_para_upsert = df_simulado[['fecha','h_sim']].rename(columns = {'fecha':'timestart', 'h_sim':'valor'},inplace = False)
 df_para_upsert['qualifier'] = 'main'
-df_para_upsert = df_para_upsert.append(df_simulado[['fecha','e_pred_05']].rename(columns = {'fecha':'timestart', 'e_pred_05': 'valor'}), ignore_index=True)
+df_para_upsert = pd.concat([df_para_upsert, df_simulado[['fecha','e_pred_05']].rename(columns = {'fecha':'timestart', 'e_pred_05': 'valor'})], ignore_index=True)
 df_para_upsert['qualifier'].fillna(value='p05',inplace=True)
-df_para_upsert = df_para_upsert.append(df_simulado[['fecha','e_pred_25']].rename(columns = {'fecha':'timestart', 'e_pred_25': 'valor'}), ignore_index=True)
+df_para_upsert = pd.concat([df_para_upsert, df_simulado[['fecha','e_pred_25']].rename(columns = {'fecha':'timestart', 'e_pred_25': 'valor'})], ignore_index=True)
 df_para_upsert['qualifier'].fillna(value='p25',inplace=True)
-df_para_upsert = df_para_upsert.append(df_simulado[['fecha','e_pred_75']].rename(columns = {'fecha':'timestart', 'e_pred_75': 'valor'}), ignore_index=True)
+df_para_upsert = pd.concat([df_para_upsert, df_simulado[['fecha','e_pred_75']].rename(columns = {'fecha':'timestart', 'e_pred_75': 'valor'})], ignore_index=True)
 df_para_upsert['qualifier'].fillna(value='p75',inplace=True)
-df_para_upsert = df_para_upsert.append(df_simulado[['fecha','e_pred_95']].rename(columns = {'fecha':'timestart', 'e_pred_95': 'valor'}), ignore_index=True)
+df_para_upsert = pd.concat([df_para_upsert, df_simulado[['fecha','e_pred_95']].rename(columns = {'fecha':'timestart', 'e_pred_95': 'valor'})], ignore_index=True)
 df_para_upsert['qualifier'].fillna(value='p95',inplace=True)
 df_para_upsert['timeend'] = df_para_upsert['timestart']  # .map(lambda a : a.isoformat())
 # ~ df_para_upsert['timestart'] = df_para_upsert['timestart'].map(lambda a : a.isoformat())
