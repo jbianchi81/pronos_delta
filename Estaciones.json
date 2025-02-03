@@ -1,157 +1,227 @@
-{"zarate":{"nombre":"Zárate",
-              "cero":0.243,
-              "cal_id_sim":288,
-              "estacion_id":"5907",
-              "serie_obs":29437,
-              "umbral_salto":0.25,
-              "name_file":"Prono_Zarate",
-              "serie_upload":29534,
-              "fig_ylim":[-1,3],
-              "niveles_alerta":{"aguas_bajas":0.3,"alerta":2,"evacuacion":2.2},
-              "cal_id":440
-              },
-    
-    "atucha":{"nombre":"Atucha",
-              "cero":-0.53,
-              "cal_id_sim":288,
-              "estacion_id":"151",
-              "serie_obs":151,
-              "umbral_salto":0.25,
-              "name_file":"Prono_Atucha",
-              "serie_upload":3403,
-              "fig_ylim":[-0.5,4.5],
-              "niveles_alerta":{},
-              "cal_id":446
-              },
-    
-    "lima":{"nombre":"Lima",
-              "cero":-0.53,
-              "cal_id_sim":288,
-              "estacion_id":"151",
-              "serie_obs":151,
-              "umbral_salto":0.25,
-              "name_file":"Prono_Lima",
-              "serie_upload":3403,
-              "fig_ylim":[-0.5,4.5],
-              "niveles_alerta":{},
-              "cal_id":446
-              },
-    
-    "campana":{"nombre":"Campana",
-              "cero":0.418,
-              "cal_id_sim":288,
-              "estacion_id":"41",
-              "serie_obs":41,
-              "umbral_salto":0.25,
-              "name_file":"Prono_Campana",
-              "serie_upload":3405,
-              "fig_ylim":[-1,3],
-              "niveles_alerta":{"aguas_bajas":0,"alerta":2.2,"evacuacion":2.45},
-              "cal_id":446
-              },
-    
-    "escobar":{"nombre":"Escobar",
-              "cero":null,
-              "cal_id_sim":288,
-              "estacion_id":"42",
-              "serie_obs":42,
-              "umbral_salto":1.0,
-              "name_file":"Prono_Escobar",
-              "serie_upload":3398,
-              "fig_ylim":[-1,3],
-              "niveles_alerta":{"aguas_bajas":0.2,"alerta":3,"evacuacion":3.5},
-              "cal_id":446
-              },
-    
-    "rosario":{"nombre":"Rosario",
-              "cero":2.92,
-              "cal_id_sim":288,
-              "estacion_id":"5893",
-              "serie_obs":34,
-              "umbral_salto":0.25,
-              "name_file":"Prono_Rosario",
-              "serie_upload":29542,
-              "fig_ylim":[-1,6],
-              "niveles_alerta":{"aguas_bajas":1.64,"alerta":5,"evacuacion":5.25},
-              "cal_id":441
-              },
-
-    "SanLorenzo":{"nombre":"San Lorenzo (San Martín)",
-              "cero":3.309,
-              "cal_id_sim":288,
-              "estacion_id":"1770",
-              "serie_obs":33,
-              "umbral_salto":1.0,
-              "name_file":"Prono_SanLorenzo",
-              "serie_upload":3389,
-              "fig_ylim":[-1,7],
-              "niveles_alerta":{"aguas_bajas":1.78,"alerta":5.2,"evacuacion":5.7},
-              "cal_id":441
-              },
-
-    "vcons":{"nombre":"Villa Constitución",
-              "cero":1.98,
-              "cal_id_sim":288,
-              "estacion_id":"5905",
-              "serie_obs":35,
-              "umbral_salto":0.25,
-              "name_file":"Prono_VConstitucion",
-              "serie_upload":29538,
-              "fig_ylim":[-1,6],
-              "niveles_alerta":{"aguas_bajas":1.3,"alerta":4,"evacuacion":4.5},
-              "cal_id":442
-              },
-    
-    "SanNicolas":{"nombre":"San Nicolás",
-              "cero":1.91,
-              "cal_id_sim":288,
-              "estacion_id":"36",
-              "serie_obs":36,
-              "umbral_salto":0.5,
-              "name_file":"Prono_SanNicolas",
-              "serie_upload":3414,
-              "fig_ylim":[-1,6],
-              "niveles_alerta":{"aguas_bajas":1.35,"alerta":4.2,"evacuacion":5},
-              "cal_id":442
-              },
-    
-    "ramallo":{"nombre":"Ramallo",
-              "cero": 1.642,
-              "cal_id_sim":288,
-              "estacion_id":"37",
-              "serie_obs":37,
-              "umbral_salto":0.5,
-              "name_file":"Prono_Ramallo",
-              "serie_upload":3415,  
-              "fig_ylim":[-1,5],
-              "niveles_alerta":{"aguas_bajas":1.1,"alerta":3.5,"evacuacion":4},
-              "cal_id":442
-              },
-
-    "carabelas":{"nombre":"Carabelas",
-              "cero":null,
-              "cal_id_sim":288,
-              "estacion_id":"5876",
-              "serie_obs":26206,
-              "umbral_salto":0.5,
-              "name_file":"prono_carabelas",
-              "serie_upload":29536,
-              "fig_ylim":[-0.5,3.5],
-              "niveles_alerta":{},
-              "cal_id":439
-              },
-            
-    "blargo":{"nombre":"Brazo Largo",
-              "cero":0.717,
-              "cal_id_sim":288,
-              "estacion_id":"2830",
-              "serie_obs":9442,
-              "umbral_salto":0.5,
-              "name_file":"prono_BrazoLargo",
-              "serie_upload":3415,
-              "fig_ylim":[-1.5,2.5],
-              "niveles_alerta":{},
-              "cal_id":442
-              }              
-
+{
+    "zarate": {
+        "nombre": "Zárate",
+        "cero": 0.243,
+        "cal_id_sim": 288,
+        "estacion_id": "5907",
+        "serie_obs": 29437,
+        "umbral_salto": 0.25,
+        "name_file": "Prono_Zarate",
+        "serie_upload": 29534,
+        "fig_ylim": [
+            -1,
+            3
+        ],
+        "niveles_alerta": {
+            "aguas_bajas": 0.3,
+            "alerta": 2,
+            "evacuacion": 2.2
+        },
+        "cal_id": 440
+    },
+    "atucha": {
+        "nombre": "Atucha",
+        "cero": -0.53,
+        "cal_id_sim": 288,
+        "estacion_id": "151",
+        "serie_obs": 151,
+        "umbral_salto": 0.25,
+        "name_file": "Prono_Atucha",
+        "serie_upload": 3403,
+        "fig_ylim": [
+            -0.5,
+            4.5
+        ],
+        "niveles_alerta": {},
+        "cal_id": 446
+    },
+    "lima": {
+        "nombre": "Lima",
+        "cero": -0.53,
+        "cal_id_sim": 288,
+        "estacion_id": "151",
+        "serie_obs": 151,
+        "umbral_salto": 0.25,
+        "name_file": "Prono_Lima",
+        "serie_upload": 3403,
+        "fig_ylim": [
+            -0.5,
+            4.5
+        ],
+        "niveles_alerta": {},
+        "cal_id": 446
+    },
+    "campana": {
+        "nombre": "Campana",
+        "cero": 0.418,
+        "cal_id_sim": 288,
+        "estacion_id": "41",
+        "serie_obs": 41,
+        "umbral_salto": 0.25,
+        "name_file": "Prono_Campana",
+        "serie_upload": 3405,
+        "fig_ylim": [
+            -1,
+            3
+        ],
+        "niveles_alerta": {
+            "aguas_bajas": 0,
+            "alerta": 2.2,
+            "evacuacion": 2.45
+        },
+        "cal_id": 446
+    },
+    "escobar": {
+        "nombre": "Escobar",
+        "cero": null,
+        "cal_id_sim": 288,
+        "estacion_id": "42",
+        "serie_obs": 42,
+        "umbral_salto": 1.0,
+        "name_file": "Prono_Escobar",
+        "serie_upload": 3398,
+        "fig_ylim": [
+            -1,
+            3
+        ],
+        "niveles_alerta": {
+            "aguas_bajas": 0.2,
+            "alerta": 3,
+            "evacuacion": 3.5
+        },
+        "cal_id": 446
+    },
+    "rosario": {
+        "nombre": "Rosario",
+        "cero": 2.92,
+        "cal_id_sim": 288,
+        "estacion_id": "5893",
+        "serie_obs": 34,
+        "umbral_salto": 0.25,
+        "name_file": "Prono_Rosario",
+        "serie_upload": 29542,
+        "fig_ylim": [
+            -1,
+            6
+        ],
+        "niveles_alerta": {
+            "aguas_bajas": 1.64,
+            "alerta": 5,
+            "evacuacion": 5.25
+        },
+        "cal_id": 441
+    },
+    "SanLorenzo": {
+        "nombre": "San Lorenzo (San Martín)",
+        "cero": 3.309,
+        "cal_id_sim": 288,
+        "estacion_id": "1770",
+        "serie_obs": 33,
+        "umbral_salto": 1.0,
+        "name_file": "Prono_SanLorenzo",
+        "serie_upload": 3389,
+        "fig_ylim": [
+            -1,
+            7
+        ],
+        "niveles_alerta": {
+            "aguas_bajas": 1.78,
+            "alerta": 5.2,
+            "evacuacion": 5.7
+        },
+        "cal_id": 441
+    },
+    "vcons": {
+        "nombre": "Villa Constitución",
+        "cero": 1.98,
+        "cal_id_sim": 288,
+        "estacion_id": "5905",
+        "serie_obs": 35,
+        "umbral_salto": 0.25,
+        "name_file": "Prono_VConstitucion",
+        "serie_upload": 29538,
+        "fig_ylim": [
+            -1,
+            6
+        ],
+        "niveles_alerta": {
+            "aguas_bajas": 1.3,
+            "alerta": 4,
+            "evacuacion": 4.5
+        },
+        "cal_id": 442
+    },
+    "SanNicolas": {
+        "nombre": "San Nicolás",
+        "cero": 1.91,
+        "cal_id_sim": 288,
+        "estacion_id": "36",
+        "serie_obs": 36,
+        "umbral_salto": 0.5,
+        "name_file": "Prono_SanNicolas",
+        "serie_upload": 3414,
+        "fig_ylim": [
+            -1,
+            6
+        ],
+        "niveles_alerta": {
+            "aguas_bajas": 1.35,
+            "alerta": 4.2,
+            "evacuacion": 5
+        },
+        "cal_id": 442
+    },
+    "ramallo": {
+        "nombre": "Ramallo",
+        "cero": 1.642,
+        "cal_id_sim": 288,
+        "estacion_id": "37",
+        "serie_obs": 37,
+        "umbral_salto": 0.5,
+        "name_file": "Prono_Ramallo",
+        "serie_upload": 3415,
+        "fig_ylim": [
+            -1,
+            5
+        ],
+        "niveles_alerta": {
+            "aguas_bajas": 1.1,
+            "alerta": 3.5,
+            "evacuacion": 4
+        },
+        "cal_id": 442
+    },
+    "carabelas": {
+        "nombre": "Carabelas",
+        "cero": null,
+        "cal_id_sim": 288,
+        "estacion_id": "5876",
+        "serie_obs": 26206,
+        "umbral_salto": 0.5,
+        "name_file": "prono_carabelas",
+        "serie_upload": 29536,
+        "fig_ylim": [
+            -0.5,
+            3.5
+        ],
+        "niveles_alerta": {},
+        "cal_id": 439,
+        "desactivar": true
+    },
+    "blargo": {
+        "nombre": "Brazo Largo",
+        "cero": 0.717,
+        "cal_id_sim": 288,
+        "estacion_id": "2830",
+        "serie_obs": 9442,
+        "umbral_salto": 0.5,
+        "name_file": "prono_BrazoLargo",
+        "serie_upload": 3415,
+        "fig_ylim": [
+            -1.5,
+            2.5
+        ],
+        "niveles_alerta": {},
+        "cal_id": 442
     }
+}
