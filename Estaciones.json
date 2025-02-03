@@ -6,7 +6,7 @@
         "estacion_id": "5907",
         "serie_obs": 29437,
         "umbral_salto": 0.25,
-        "name_file": "Prono_Zarate",
+        "name_file": "productos/Prono_Zarate",
         "serie_upload": 29534,
         "fig_ylim": [
             -1,
@@ -26,7 +26,7 @@
         "estacion_id": "151",
         "serie_obs": 151,
         "umbral_salto": 0.25,
-        "name_file": "Prono_Atucha",
+        "name_file": "productos_res/Prono_Atucha",
         "serie_upload": 3403,
         "fig_ylim": [
             -0.5,
@@ -42,7 +42,7 @@
         "estacion_id": "151",
         "serie_obs": 151,
         "umbral_salto": 0.25,
-        "name_file": "Prono_Lima",
+        "name_file": "productos/Prono_Lima",
         "serie_upload": 3403,
         "fig_ylim": [
             -0.5,
@@ -58,7 +58,7 @@
         "estacion_id": "41",
         "serie_obs": 41,
         "umbral_salto": 0.25,
-        "name_file": "Prono_Campana",
+        "name_file": "productos/Prono_Campana",
         "serie_upload": 3405,
         "fig_ylim": [
             -1,
@@ -78,7 +78,7 @@
         "estacion_id": "42",
         "serie_obs": 42,
         "umbral_salto": 1.0,
-        "name_file": "Prono_Escobar",
+        "name_file": "productos/Prono_Escobar",
         "serie_upload": 3398,
         "fig_ylim": [
             -1,
@@ -98,7 +98,7 @@
         "estacion_id": "5893",
         "serie_obs": 34,
         "umbral_salto": 0.25,
-        "name_file": "Prono_Rosario",
+        "name_file": "productos/Prono_Rosario",
         "serie_upload": 29542,
         "fig_ylim": [
             -1,
@@ -118,7 +118,7 @@
         "estacion_id": "1770",
         "serie_obs": 33,
         "umbral_salto": 1.0,
-        "name_file": "Prono_SanLorenzo",
+        "name_file": "productos/Prono_SanLorenzo",
         "serie_upload": 3389,
         "fig_ylim": [
             -1,
@@ -138,7 +138,7 @@
         "estacion_id": "5905",
         "serie_obs": 35,
         "umbral_salto": 0.25,
-        "name_file": "Prono_VConstitucion",
+        "name_file": "productos/Prono_VConstitucion",
         "serie_upload": 29538,
         "fig_ylim": [
             -1,
@@ -158,7 +158,7 @@
         "estacion_id": "36",
         "serie_obs": 36,
         "umbral_salto": 0.5,
-        "name_file": "Prono_SanNicolas",
+        "name_file": "productos/Prono_SanNicolas",
         "serie_upload": 3414,
         "fig_ylim": [
             -1,
@@ -178,7 +178,7 @@
         "estacion_id": "37",
         "serie_obs": 37,
         "umbral_salto": 0.5,
-        "name_file": "Prono_Ramallo",
+        "name_file": "productos/Prono_Ramallo",
         "serie_upload": 3415,
         "fig_ylim": [
             -1,
@@ -198,7 +198,7 @@
         "estacion_id": "5876",
         "serie_obs": 26206,
         "umbral_salto": 0.5,
-        "name_file": "prono_carabelas",
+        "name_file": "productos/prono_carabelas",
         "serie_upload": 29536,
         "fig_ylim": [
             -0.5,
@@ -215,7 +215,7 @@
         "estacion_id": "2830",
         "serie_obs": 9442,
         "umbral_salto": 0.5,
-        "name_file": "prono_BrazoLargo",
+        "name_file": "productos/prono_BrazoLargo",
         "serie_upload": 3415,
         "fig_ylim": [
             -1.5,

@@ -297,7 +297,7 @@ def GeneraGrafico(DicEst,plots=False, upload=True, output_csv=False):
     # PLOT FINAL
     plotFinal(df_Obs,
               df,
-              nameout='productos/'+name_file+'.png',
+              nameout='%s.png' % name_file,
               ylim=fig_ylim,
               nombre_estacion=nombre,
               niveles_alerta=DicNiveles,
@@ -309,14 +309,14 @@ def GeneraGrafico(DicEst,plots=False, upload=True, output_csv=False):
         uploadPronoSeries(series,
                           cal_id=cal_id_save,
                           forecast_date=fecha_emision,
-                          outputfile="productos/"+name_file+".json",
+                          outputfile='%s.json' % name_file,
                           responseOutputFile="productos/pronoresponse.json")
     else:
         data = prono2json(series,forecast_date=fecha_emision)
-        outputjson(data,"productos/"+name_file+".json")
+        outputjson(data,'%s.json' % name_file)
     
     if output_csv:
-        outputcsv(df,"productos/"+name_file+".csv")
+        outputcsv(df,'%s.csv' % name_file)
 
 def runPlan(plan,plots=True,upload=False,output_csv=False):
     # planes = [
