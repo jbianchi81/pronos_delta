@@ -1,0 +1,13 @@
+id,nombre,cero,cal_id_sim,estacion_id,serie_obs,umbral_salto,name_file,serie_upload,fig_ylim,niveles_alerta,cal_id
+zarate,Zárate,0.243,288,5907,29437,0.25,Prono_Zarate,29534,"[-1, 3]","{'aguas_bajas': 0.3, 'alerta': 2, 'evacuacion': 2.2}",440
+atucha,Atucha,-0.53,288,151,151,0.25,Prono_Atucha,3403,"[-0.5, 4.5]",{},446
+lima,Lima,-0.53,288,151,151,0.25,Prono_Lima,3403,"[-0.5, 4.5]",{},446
+campana,Campana,0.418,288,41,41,0.25,Prono_Campana,3405,"[-1, 3]","{'aguas_bajas': 0, 'alerta': 2.2, 'evacuacion': 2.45}",446
+escobar,Escobar,,288,42,42,1.0,Prono_Escobar,3398,"[-1, 3]","{'aguas_bajas': 0.2, 'alerta': 3, 'evacuacion': 3.5}",446
+rosario,Rosario,2.92,288,5893,34,0.25,Prono_Rosario,29542,"[-1, 6]","{'aguas_bajas': 1.64, 'alerta': 5, 'evacuacion': 5.25}",441
+SanLorenzo,San Lorenzo (San Martín),3.309,288,1770,33,1.0,Prono_SanLorenzo,3389,"[-1, 7]","{'aguas_bajas': 1.78, 'alerta': 5.2, 'evacuacion': 5.7}",441
+vcons,Villa Constitución,1.98,288,5905,35,0.25,Prono_VConstitucion,29538,"[-1, 6]","{'aguas_bajas': 1.3, 'alerta': 4, 'evacuacion': 4.5}",442
+SanNicolas,San Nicolás,1.91,288,36,36,0.5,Prono_SanNicolas,3414,"[-1, 6]","{'aguas_bajas': 1.35, 'alerta': 4.2, 'evacuacion': 5}",442
+ramallo,Ramallo,1.642,288,37,37,0.5,Prono_Ramallo,3415,"[-1, 5]","{'aguas_bajas': 1.1, 'alerta': 3.5, 'evacuacion': 4}",442
+carabelas,Carabelas,,288,5876,26206,0.5,prono_carabelas,29536,"[-0.5, 3.5]",{},439
+blargo,Brazo Largo,0.717,288,2830,9442,0.5,prono_BrazoLargo,3415,"[-1.5, 2.5]",{},442
