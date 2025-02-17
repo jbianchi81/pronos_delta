@@ -301,7 +301,7 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
     lst_corridas = []
     lst_pronoday = []
     for corridas in range(len(json_res)):
-        lst_corridas.append(json_res[corridas]['cor_id'])
+        lst_corridas.append(json_res[corridas]['id'])
         lst_pronoday.append(json_res[corridas]['forecast_date'])
     df_id = pd.DataFrame(lst_pronoday, index =lst_corridas,columns=['forecast_date',])
     df_id['forecast_date'] = pd.to_datetime(df_id['forecast_date'])
