@@ -28,14 +28,17 @@ apiLoginParams = config["api"]
 def getLastProno(cal_id=288,filter={}):
     response = requests.get(
         apiLoginParams["url"] + '/sim/calibrados/' + str(cal_id) + '/corridas/last',
-        params = filter,
+        params = {
+            **filter,
+            "includeProno": True
+        },
         headers = {'Authorization': 'Bearer ' + apiLoginParams["token"]},
     )
     json_response = response.json()
     if not len(json_response['series']):
         raise Exception("No series found in retrieved forecast run with filter: %s" % str(filter))
     df_sim = pd.DataFrame.from_dict(json_response['series'][0]['pronosticos'],orient='columns')
-    df_sim = df_sim.rename(columns={0:'fecha',1:'fecha2',2:'h_sim',3:'main'})
+    df_sim = df_sim.rename(columns={"timestart":'fecha',"timeend":'fecha2',"valor":'h_sim',"qualifier":'main'})
     df_sim = df_sim[['fecha','h_sim']]
     df_sim['fecha'] = pd.to_datetime(df_sim['fecha'])
     df_sim['h_sim'] = df_sim['h_sim'].astype(float)
