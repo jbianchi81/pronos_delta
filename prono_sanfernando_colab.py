@@ -326,7 +326,8 @@ ax.xaxis.set_minor_locator(mdates.HourLocator((0,6,12,18,))) #3,9,15,21,)))
 df_simulado['horas'] =  df_simulado['fecha'].dt.hour
 list0hrs = df_simulado[df_simulado['horas']==0]['fecha'].tolist()
 ax.axvspan(list0hrs[0], list0hrs[1], alpha=0.1, color='grey')
-ax.axvspan(list0hrs[2], list0hrs[3], alpha=0.1, color='grey')
+if len(list0hrs) >= 4:
+    ax.axvspan(list0hrs[2], list0hrs[3], alpha=0.1, color='grey')
 
 
 #plt.show()
