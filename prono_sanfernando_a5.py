@@ -26,9 +26,8 @@ from sklearn.metrics import mean_squared_error, r2_score
 
 import requests
 import json
-
 import argparse
-
+import os
 import locale
 
 # set locale for date formatting
@@ -36,7 +35,9 @@ locale.setlocale(locale.LC_ALL,"es_AR.utf8")
 
 local_timezone = pytz.timezone('America/Argentina/Buenos_Aires')
 
-with open("config.json") as f:
+script_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(script_dir,"config.json")
+with open(config_path) as f:
 	config = json.load(f)
 
 from a5client import Crud
@@ -287,8 +288,9 @@ def readAdjustAndPlotProno(plots_auxiliares = False):
 
     #plt.show()
 
-    nameout = 'productos/Prono_SanFernando.png'
-    plt.savefig(nameout, format='png')# , dpi=200, facecolor='w', edgecolor='w',bbox_inches = 'tight', pad_inches = 0
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    png_path = os.path.join(script_dir, 'productos', 'Prono_SanFernando.png')
+    plt.savefig(png_path, format='png')# , dpi=200, facecolor='w', edgecolor='w',bbox_inches = 'tight', pad_inches = 0
     plt.close()
 
     return df_sfer_prono, forecast_date
