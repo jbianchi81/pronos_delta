@@ -7,3 +7,4 @@ matplotlib
 scikit-learn
 python-dateutil
 pytz
+a5-client
