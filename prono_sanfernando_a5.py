@@ -27,10 +27,14 @@ from sklearn.metrics import mean_squared_error, r2_score
 import requests
 import json
 
+import argparse
+
 import locale
 
 # set locale for date formatting
 locale.setlocale(locale.LC_ALL,"es_AR.utf8")
+
+local_timezone = pytz.timezone('America/Argentina/Buenos_Aires')
 
 with open("config.json") as f:
 	config = json.load(f)
@@ -47,354 +51,274 @@ client = Crud(config["api"]["url"], config["api"]["token"])
 #    print( "No se ha podido establecer conexion.")
 #    exit(1)
 
-ahora = datetime.datetime.now()
-DaysMod = 15   
-f_fin = ahora
-f_inicio = (f_fin - timedelta(days=DaysMod)).replace(hour=0, minute=0, second=0)
+def readAdjustAndPlotProno(plots_auxiliares = False):
+    ahora = datetime.datetime.now()
+    DaysMod = 15   
+    f_fin = ahora
+    f_inicio = (f_fin - timedelta(days=DaysMod)).replace(hour=0, minute=0, second=0)
 
-plotea = False
+    unid_margen_derecha = 52 # 85
+    series_id_margen_derecha = 52
 
-unid_margen_derecha = 52 # 85
-series_id_margen_derecha = 52
+    # consulta a5
+    # OBSERVADOS
+    serie_sfer_obs = client.readSerie(series_id_margen_derecha, f_inicio, f_fin, "puntual")
+    # PRONOSTICADOS
+    serie_sfer_prono = client.readSeriePronoConcat(707, 6066, "median", f_inicio, f_fin + timedelta(days=4)) 
 
-# consulta a5
-# OBSERVADOS
-serie_sfer_obs = client.readSerie(series_id_margen_derecha, f_inicio, f_fin, "puntual")
-# PRONOSTICADOS
-serie_sfer_prono = client.readSeriePronoConcat(707, 6066, "median", f_inicio, f_fin + timedelta(days=4)) 
+    df_sfer_obs = pd.DataFrame(serie_sfer_obs["observaciones"])[["timestart","valor"]].rename(columns={"timestart":"fecha","valor":"obs"})
+    df_sfer_obs["fecha"] = pd.to_datetime(df_sfer_obs['fecha'])
+    df_sfer_obs.set_index("fecha",inplace=True)
+    df_sfer_obs.index = df_sfer_obs.index.tz_convert('America/Argentina/Buenos_Aires')
 
-df_sfer_obs = pd.DataFrame(serie_sfer_obs["observaciones"])[["timestart","valor"]].rename(columns={"timestart":"fecha","valor":"obs"})
-df_sfer_obs["fecha"] = pd.to_datetime(df_sfer_obs['fecha'])
-df_sfer_obs.set_index("fecha",inplace=True)
-df_sfer_obs.index = df_sfer_obs.index.tz_convert('America/Argentina/Buenos_Aires')
+    df_sfer_prono = pd.DataFrame(serie_sfer_prono["pronosticos"])[["timestart","valor"]].rename(columns={"timestart":"fecha","valor":"sim"})
+    df_sfer_prono["fecha"] = pd.to_datetime(df_sfer_prono['fecha'])
+    df_sfer_prono.set_index("fecha",inplace=True)
+    df_sfer_prono.index = df_sfer_prono.index.tz_convert('America/Argentina/Buenos_Aires')
 
-df_sfer_prono = pd.DataFrame(serie_sfer_prono["pronosticos"])[["timestart","valor"]].rename(columns={"timestart":"fecha","valor":"sim"})
-df_sfer_prono["fecha"] = pd.to_datetime(df_sfer_prono['fecha'])
-df_sfer_prono.set_index("fecha",inplace=True)
-df_sfer_prono.index = df_sfer_prono.index.tz_convert('America/Argentina/Buenos_Aires')
+    indexUnico = pd.date_range(start=df_sfer_prono.index.min(), end=df_sfer_prono.index.max(), freq='15min')	    #Fechas desde f_inicio a f_fin con un paso de 5 minutos
+    df_base = pd.DataFrame(index = indexUnico)								#Crea el Df con indexUnico
+    df_base.index.rename('fecha', inplace=True)							    #Cambia nombre incide por Fecha
+    df_base.index = df_base.index.round("15min")
 
-# df_sfer = pd.merge(
-#     df_sfer_obs, 
-#     df_sfer_prono, 
-#     how='outer', 
-#     left_index=True, 
-#     right_index=True)
+    df_base = df_base.join(df_sfer_prono[['sim']], how = 'left')
+    df_base = df_base.join(df_sfer_obs[['obs']], how = 'left')
+    df_base['obs'] = df_base['obs'].interpolate(limit=2)
 
-# paramH0 = (f_inicio, f_fin, str(unid_margen_derecha)) 
-# sql_query = ('''SELECT timestart as fecha, valor as h_obs
-#               FROM alturas_all
-#               WHERE  timestart BETWEEN %s AND %s AND unid = %s;''')  #Consulta SQL
-# df_sferObs = pd.read_sql_query(sql_query, conn, params=paramH0)             #Toma los datos de la BBDD
-# keys =  pd.to_datetime(df_sferObs['fecha'])
-# df_sferObs.set_index(keys, inplace=True)
+    df_base = df_base.dropna()
 
-# SIMULADO
-# paramH1 = (f_inicio, f_fin)
-# sql_query = ('''SELECT unid as id, timestart as fecha,
-#                 altura_astronomica_ign as h_ast_ign, altura_meteorologica as h_met
-#                 FROM alturas_marea_suma 
-#                 WHERE  timestart BETWEEN %s AND %s AND unid = 1838;''')              #Consulta SQL
-# df_sferSim = pd.read_sql_query(sql_query, conn, params=paramH1)								#Toma los datos de la BBDD	
-# keys =  pd.to_datetime(df_sferSim['fecha'])#, format='%Y-%m-%d')                     #Convierte a formato fecha la columna [fecha]
-# df_sferSim.set_index(keys, inplace=True)
-# df_sferSim['h_ast_ign'] = df_sferSim['h_ast_ign'] + 0.53
-# df_sferSim['h_sim0'] = df_sferSim['h_ast_ign'] + df_sferSim['h_met']
+    if plots_auxiliares:
+        fig = plt.figure(figsize=(15, 8))
+        ax = fig.add_subplot(1, 1, 1)
+        ax.plot(df_base.index, df_base['obs'],'o',label='h_obs',linewidth=1)
+        ax.plot(df_base.index, df_base['obs'],'-',color='k',linewidth=1)    
+        ax.plot(df_base.index, df_base['sim'],'-',label='h_sim: solo Suma',linewidth=2)
+        # ax.plot(df_base.index, df_base['h_ast_ign'],'-',label='h_ast_ign',linewidth=0.8)
+        # ax.plot(df_base.index, df_base['h_met'],'-',label='h_met',linewidth=0.8)
+        plt.grid(True, which='both', color='0.75', linestyle='-.',linewidth=0.7)
+        plt.tick_params(axis='both', labelsize=16)
+        plt.xlabel('Fecha', size=18)
+        plt.ylabel('Nivel [m]', size=18)
+        plt.legend(prop={'size':16},loc=2,ncol=2 )
+        plt.show()
+        plt.close()
 
-indexUnico = pd.date_range(start=df_sfer_prono.index.min(), end=df_sfer_prono.index.max(), freq='15min')	    #Fechas desde f_inicio a f_fin con un paso de 5 minutos
-df_base = pd.DataFrame(index = indexUnico)								#Crea el Df con indexUnico
-df_base.index.rename('fecha', inplace=True)							    #Cambia nombre incide por Fecha
-df_base.index = df_base.index.round("15min")
+    ## Modelo
+    train = df_base[:].copy()
+    var_obj = 'obs'
+    covariav = ['sim']
+    lr = linear_model.LinearRegression()
+    X_train = train[covariav]
+    Y_train = train[var_obj]
+    lr.fit(X_train,Y_train)
 
-df_base = df_base.join(df_sfer_prono[['sim']], how = 'left')
-df_base = df_base.join(df_sfer_obs[['obs']], how = 'left')
-df_base['obs'] = df_base['obs'].interpolate(limit=2)
+    # Create the test features dataset (X_test) which will be used to make the predictions.
+    X_test = train[covariav].values 
+    # The labels of the model
+    Y_test = train[var_obj].values
+    Y_predictions = lr.predict(X_test)
+    train['Y_predictions'] = Y_predictions
 
-df_base = df_base.dropna()
+    # The coefficients
+    print('Coefficients: \n', lr.coef_)
+    # The mean squared error
+    mse = mean_squared_error(Y_test, Y_predictions)
+    print('Mean squared error: %.5f' % mse)
+    # The coefficient of determination: 1 is perfect prediction
+    coefDet = r2_score(Y_test, Y_predictions)
+    print('r2_score: %.5f' % coefDet)
+    train['Error_pred'] =  train['Y_predictions']  - train[var_obj]
 
-if plotea:
-    fig = plt.figure(figsize=(15, 8))
+
+    if plots_auxiliares:
+        fig = plt.figure(figsize=(15, 8))
+        ax = fig.add_subplot(1, 1, 1)
+        # Plot outputs
+        plt.scatter(Y_predictions, Y_test,  label='A01')
+        plt.xlabel('sim', size=12)
+        plt.ylabel('obs', size=12)
+        plt.legend(prop={'size':16},loc=2,ncol=2 )
+        plt.show()
+        fig = plt.figure(figsize=(15, 8))
+        ax = fig.add_subplot(1, 1, 1)
+        # Plot outputs
+        plt.scatter(train['Y_predictions'], train['Error_pred'], label='Error')
+        plt.xlabel('H Sim', size=12)
+        plt.ylabel('Error', size=12)
+        plt.legend(prop={'size':16},loc=2,ncol=2 )
+        plt.show()
+
+
+    quant_Err = train['Error_pred'].quantile([0.05,.25, .75,0.95])
+
+    # Plot final
+    DaysMod = 1
+    f_fin = ahora
+    f_inicio = (f_fin - timedelta(days=DaysMod)).replace(hour=0, minute=0, second=0)
+    f_fin = (f_fin + timedelta(days=5))
+
+    # Pronostico
+    covariav = ['sim']
+    prediccion = lr.predict(df_sfer_prono[covariav].values)
+    df_sfer_prono['adjusted'] = prediccion
+
+    df_sfer_prono['e_pred_05'] = df_sfer_prono['adjusted'] + quant_Err[0.05]
+    df_sfer_prono['e_pred_25'] = df_sfer_prono['adjusted'] + quant_Err[0.25]
+    df_sfer_prono['e_pred_75'] = df_sfer_prono['adjusted'] + quant_Err[0.75]
+    df_sfer_prono['e_pred_95'] = df_sfer_prono['adjusted'] + quant_Err[0.95]
+
+    # PLOT
+    fig = plt.figure(figsize=(16, 12))
     ax = fig.add_subplot(1, 1, 1)
-    ax.plot(df_base.index, df_base['obs'],'o',label='h_obs',linewidth=1)
-    ax.plot(df_base.index, df_base['obs'],'-',color='k',linewidth=1)    
-    ax.plot(df_base.index, df_base['sim'],'-',label='h_sim: solo Suma',linewidth=2)
-    # ax.plot(df_base.index, df_base['h_ast_ign'],'-',label='h_ast_ign',linewidth=0.8)
-    # ax.plot(df_base.index, df_base['h_met'],'-',label='h_met',linewidth=0.8)
-    plt.grid(True, which='both', color='0.75', linestyle='-.',linewidth=0.7)
+
+    ax.plot(df_sfer_prono.index, df_sfer_prono['adjusted'], '-',color='b',label='Nivel Pronosticado (*)',linewidth=3)
+
+    ax.plot(df_sfer_obs.index, df_sfer_obs['obs'],'o',color='k',label='Nivel Observado',linewidth=3)
+    ax.plot(df_sfer_obs.index, df_sfer_obs['obs'],'-',color='k',linewidth=1,label="_altura")
+
+
+    ax.plot(df_sfer_prono.index, df_sfer_prono['e_pred_05'],'-',color='k',linewidth=0.5,alpha=0.75,label="_nolegend_")
+    ax.plot(df_sfer_prono.index, df_sfer_prono['e_pred_95'],'-',color='k',linewidth=0.5,alpha=0.75,label="_nolegend_")
+    ax.fill_between(df_sfer_prono.index,df_sfer_prono['e_pred_05'], df_sfer_prono['e_pred_95'],alpha=0.1,label='Banda de error')
+
+    # Lineas: 1 , 1.5 y 2 mts
+    xmin=df_sfer_prono.index.min()
+    xmax=df_sfer_prono.index.max()
+
+    plt.hlines(3.5, xmin, xmax, colors='r', linestyles='-.', label='Evacuación',linewidth=1.5)
+    plt.hlines(3, xmin, xmax, colors='y', linestyles='-.', label='Alerta',linewidth=1.5)
+
+    # fecha emision
+    forecast_date = datetime.datetime.fromisoformat(serie_sfer_prono['forecast_date'].replace("Z", "")).replace(tzinfo=timezone.utc)
+    plt.axvline(x=forecast_date,color="black", linestyle="--",linewidth=2)#,label='Fecha de emisión')
+
+    bbox = dict(boxstyle="round", fc="0.7")
+    arrowprops = dict(
+        arrowstyle="->",
+        connectionstyle="angle,angleA=0,angleB=90,rad=10")
+    offset = 10
+
+
+    xdisplay = ahora + timedelta(days=0.6)
+    ax.annotate('Pronóstico a 3 días',
+        xy=(xdisplay, -0.8), xytext=(-8*offset, -offset), textcoords='offset points',
+        bbox=bbox, fontsize=18)#arrowprops=arrowprops
+
+    xdisplay = ahora - timedelta(days=1.8)
+    ax.annotate('Días pasados',
+        xy=(xdisplay, -0.8), xytext=(-8*offset, -offset), textcoords='offset points',
+        bbox=bbox, fontsize=18)
+
+
+    ax.annotate(
+        'Fecha de emisión',
+        xy=(forecast_date - timedelta(days=0.01), -0.35),fontsize=15, xytext=(forecast_date + timedelta(days=0.45), -0.30), arrowprops=dict(facecolor='black',shrink=0.05)
+    )
+
+
+    nombre_estacion = 'San Fernando'
+    cero = -0.53
+    ylim=(-1,4)
+
+
+    fig.subplots_adjust(bottom=0.205,right=0.7)
+    plt.figtext(0,0,'          (*) Esta previsión surge de aplicar el Modelo Matemático del Delta del Programa de Hidráulica Computacional (PHC) de la Subgerencia \n          del Laboratorio de Hidráulica (SLH) del Instituto Nacional del Agua (INA), forzado por el caudal pronosticado del río Paraná de acuerdo \n          al Sistema de Información y Alerta Hidrológico (SIyAH-INA) y por el nivel del Río de la Plata en el arco San Fernando - Nueva Palmira \n          pronosticado por el Servicio de Hidrografía Naval (SHN) y el Servicio Meteorológico Nacional (SMN). Es una herramienta preliminar \n          de pronóstico para utilizar en la emergencia hídrica, que se irá ajustando en el tiempo para generar información más confiable. \n \n',fontsize=12,ha="left")
+    if cero is not None:
+        plt.figtext(0,0,'          (**) El cero de la escala de ' + nombre_estacion + ' corresponde a ' + str(cero+0.53) +' mMOP / '+ str(cero) +' mIGN \n',fontsize=12,ha="left")
+    if ylim:
+        ax.set_ylim(ylim[0],ylim[1])
+
+    ax.set_xlim(xmin,xmax)
+    ax.tick_params(labeltop=False, labelright=True)
+
+    plt.grid(True, which='both', color='0.75', linestyle='-.',linewidth=0.5)
     plt.tick_params(axis='both', labelsize=16)
-    plt.xlabel('Fecha', size=18)
-    plt.ylabel('Nivel [m]', size=18)
-    plt.legend(prop={'size':16},loc=2,ncol=2 )
-    plt.show()
+    plt.xlabel('Fecha', size=16)
+    plt.ylabel('Nivel [m] Referido al cero local (**)', size=20)
+    plt.legend(prop={'size':18},loc=2,ncol=2 )
+    plt.title('Previsión de niveles a corto plazo en ' + nombre_estacion,fontsize=20)
+
+    local_ahora = local_timezone.localize(ahora)
+
+    #### TABLA
+    h_resumen = [0,6,12,18]
+    df_prono = df_sfer_prono[df_sfer_prono.index > local_ahora ].copy()
+    # df_prono.set_index(df_prono['fecha'], inplace=True)
+    df_prono['Hora'] = df_prono.index.hour
+    df_prono['Dia'] = df_prono.index.day
+    df_prono = df_prono[df_prono['Hora'].isin(h_resumen)].copy()
+
+    #print(df_prono)
+    df_prono['Y_predic'] = df_prono['adjusted'].round(2)
+    df_prono['Hora'] = df_prono['Hora'].astype(str)
+    df_prono['Hora'] = df_prono['Hora'].replace('0', '00')
+    df_prono['Hora'] = df_prono['Hora'].replace('6', '06')
+    df_prono['Dia'] = df_prono['Dia'].astype(str)
+    df_prono['Fechap'] = df_prono['Dia']+' '+df_prono['Hora']+'hrs'
+
+    df_prono = df_prono[['Fechap','Y_predic',]]
+    #print(df_prono)
+    cell_text = []
+
+    for row in range(len(df_prono)):
+        cell_text.append(df_prono.iloc[row])
+        #print(cell_text)
+
+    columns = ('Fecha','Nivel',)
+    table = plt.table(cellText=cell_text,
+                    colLabels=columns,
+                    bbox = (1.08, 0, 0.2, 0.5))
+    table.set_fontsize(12)
+    #table.scale(2.5, 2.5)  # may help
+
+
+    date_form = DateFormatter("%Hhrs \n %d-%b")
+    ax.xaxis.set_major_formatter(date_form)
+    ax.xaxis.set_minor_locator(mdates.HourLocator((0,6,12,18,))) #3,9,15,21,)))
+
+
+    ## FRANJAS VERTICALES
+    df_sfer_prono['horas'] =  df_sfer_prono.index.hour
+    list0hrs = df_sfer_prono[df_sfer_prono['horas']==0].index.tolist()
+    ax.axvspan(list0hrs[0], list0hrs[1], alpha=0.1, color='grey')
+    if len(list0hrs) >= 4:
+        ax.axvspan(list0hrs[2], list0hrs[3], alpha=0.1, color='grey')
+
+
+    #plt.show()
+
+    nameout = 'productos/Prono_SanFernando.png'
+    plt.savefig(nameout, format='png')# , dpi=200, facecolor='w', edgecolor='w',bbox_inches = 'tight', pad_inches = 0
     plt.close()
 
-## Modelo
-train = df_base[:].copy()
-var_obj = 'obs'
-covariav = ['sim']
-lr = linear_model.LinearRegression()
-X_train = train[covariav]
-Y_train = train[var_obj]
-lr.fit(X_train,Y_train)
+    return df_sfer_prono, forecast_date
 
-# Create the test features dataset (X_test) which will be used to make the predictions.
-X_test = train[covariav].values 
-# The labels of the model
-Y_test = train[var_obj].values
-Y_predictions = lr.predict(X_test)
-train['Y_predictions'] = Y_predictions
+def dfToA5(df_sfer_prono, forecast_date) -> dict:
+    # df para UPSERT
+    df_para_upsert = df_sfer_prono[['adjusted']].reset_index().rename(columns = {'fecha':'timestart', 'adjusted':'valor'},inplace = False)
+    df_para_upsert['qualifier'] = 'main'
+    df_para_upsert = pd.concat([df_para_upsert, df_sfer_prono[['e_pred_05']].reset_index().rename(columns = {'fecha':'timestart', 'e_pred_05': 'valor'})], ignore_index=True)
+    df_para_upsert.fillna({'qualifier':'p05'},inplace=True)
+    df_para_upsert = pd.concat([df_para_upsert, df_sfer_prono[['e_pred_25']].reset_index().rename(columns = {'fecha':'timestart', 'e_pred_25': 'valor'})], ignore_index=True)
+    df_para_upsert.fillna({'qualifier':'p25'},inplace=True)
+    df_para_upsert = pd.concat([df_para_upsert, df_sfer_prono[['e_pred_75']].reset_index().rename(columns = {'fecha':'timestart', 'e_pred_75': 'valor'})], ignore_index=True)
+    df_para_upsert.fillna({'qualifier':'p75'},inplace=True)
+    df_para_upsert = pd.concat([df_para_upsert, df_sfer_prono[['e_pred_95']].reset_index().rename(columns = {'fecha':'timestart', 'e_pred_95': 'valor'})], ignore_index=True)
+    df_para_upsert.fillna({'qualifier':'p95'},inplace=True)
+    df_para_upsert['timeend'] = df_para_upsert['timestart']  # .map(lambda a : a.isoformat())
+    # ~ df_para_upsert['timestart'] = df_para_upsert['timestart'].map(lambda a : a.isoformat())
+    # ~ print(df_para_upsert)
+    return {'forecast_date': forecast_date.isoformat(),
+                'series': [
+                    {
+                        'series_table': 'series',
+                        'series_id': 26202,
+                        'pronosticos': json.loads(df_para_upsert.to_json(orient='records',date_format='iso'))
+                    }
+                ]}
+    # ~ print(para_upsert)
 
-# The coefficients
-print('Coefficients: \n', lr.coef_)
-# The mean squared error
-mse = mean_squared_error(Y_test, Y_predictions)
-print('Mean squared error: %.5f' % mse)
-# The coefficient of determination: 1 is perfect prediction
-coefDet = r2_score(Y_test, Y_predictions)
-print('r2_score: %.5f' % coefDet)
-train['Error_pred'] =  train['Y_predictions']  - train[var_obj]
-
-
-if plotea:
-    fig = plt.figure(figsize=(15, 8))
-    ax = fig.add_subplot(1, 1, 1)
-    # Plot outputs
-    plt.scatter(Y_predictions, Y_test,  label='A01')
-    plt.xlabel('sim', size=12)
-    plt.ylabel('obs', size=12)
-    plt.legend(prop={'size':16},loc=2,ncol=2 )
-    plt.show()
-    fig = plt.figure(figsize=(15, 8))
-    ax = fig.add_subplot(1, 1, 1)
-    # Plot outputs
-    plt.scatter(train['Y_predictions'], train['Error_pred'], label='Error')
-    plt.xlabel('H Sim', size=12)
-    plt.ylabel('Error', size=12)
-    plt.legend(prop={'size':16},loc=2,ncol=2 )
-    plt.show()
-
-
-quant_Err = train['Error_pred'].quantile([0.05,.25, .75,0.95])
-
-# Plot final
-DaysMod = 1
-f_fin = ahora
-f_inicio = (f_fin - timedelta(days=DaysMod)).replace(hour=0, minute=0, second=0)
-f_fin = (f_fin + timedelta(days=5))
-
-# OBSERVADOS
-#Parametros para la consulta SQL a la BBDD
-# paramH0 = (f_inicio, f_fin, str(unid_margen_derecha)) 
-# sql_query = ('''SELECT timestart as fecha, valor as altura
-#                 FROM alturas_all
-#                 WHERE  timestart BETWEEN %s AND %s AND unid = %s;''')  #Consulta SQL
-# df_sferObs = pd.read_sql_query(sql_query, conn, params=paramH0)             #Toma los datos de la BBDD
-# df_sferObs['fecha'] =  pd.to_datetime(df_sferObs['fecha'])
-
-
-# SIMULADO
-# paramH1 = (f_inicio, f_fin)         #Parametros para la consulta SQL a la BBDD
-# ~ sql_query = ('''SELECT unid as id, timestart as fecha, 
-                # ~ altura_astronomica_ign as h_ast_ign, altura_meteorologica as h_met,
-                # ~ timeupdate as fecha_emision
-                # ~ FROM alturas_marea_suma_corregida 
-                # ~ WHERE  timestart BETWEEN %s AND %s AND unid = 1838;''')              #Consulta SQL
-# sql_query = ('''SELECT unid as id, timestart as fecha, 
-#                 altura_astronomica_ign as h_ast_ign, altura_meteorologica as h_met,
-#                 timeupdate as fecha_emision
-#                 FROM alturas_marea_suma 
-#                 WHERE  timestart BETWEEN %s AND %s AND unid = 1838;''')              #Consulta SQL
-# df_sfer_prono = pd.read_sql_query(sql_query, conn, params=paramH1)								#Toma los datos de la BBDD	
-# df_sfer_prono['fecha'] =  pd.to_datetime(df_sfer_prono['fecha'])#, format='%Y-%m-%d')                     #Convierte a formato fecha la columna [fecha]
-
-# # Solo astronomica a cero local SFernando
-# df_sfer_prono['h_ast_ign'] = df_sfer_prono['h_ast_ign'] + 0.53 
-
-
-# Guarda en BBDD LOCAL
-if False:
-    df_sim_guarda = df_sfer_prono[df_sfer_prono['fecha']>ahora].copy()
-    mes = str(ahora.month)
-    dia = str(ahora.day)
-    hora = str(ahora.hour)
-    cod = ''.join([mes, dia, hora])
-
-    df_sim_guarda['emision'] = cod
-    conn2 = sqlite3.connect('PronostSanFer.sqlite')
-    df_sim_guarda.to_sql('Simulado', con = conn2, if_exists='append',index=False)
-
-
-# Pronostico
-covariav = ['sim']
-prediccion = lr.predict(df_sfer_prono[covariav].values)
-df_sfer_prono['adjusted'] = prediccion
-
-df_sfer_prono['e_pred_05'] = df_sfer_prono['adjusted'] + quant_Err[0.05]
-df_sfer_prono['e_pred_25'] = df_sfer_prono['adjusted'] + quant_Err[0.25]
-df_sfer_prono['e_pred_75'] = df_sfer_prono['adjusted'] + quant_Err[0.75]
-df_sfer_prono['e_pred_95'] = df_sfer_prono['adjusted'] + quant_Err[0.95]
-
-
-
-# PLOT
-fig = plt.figure(figsize=(16, 12))
-ax = fig.add_subplot(1, 1, 1)
-
-
-ax.plot(df_sfer_prono.index, df_sfer_prono['adjusted'], '-',color='b',label='Nivel Pronosticado (*)',linewidth=3)
-
-ax.plot(df_sfer_obs.index, df_sfer_obs['obs'],'o',color='k',label='Nivel Observado',linewidth=3)
-ax.plot(df_sfer_obs.index, df_sfer_obs['obs'],'-',color='k',linewidth=1,label="_altura")
-
-
-ax.plot(df_sfer_prono.index, df_sfer_prono['e_pred_05'],'-',color='k',linewidth=0.5,alpha=0.75,label="_nolegend_")
-ax.plot(df_sfer_prono.index, df_sfer_prono['e_pred_95'],'-',color='k',linewidth=0.5,alpha=0.75,label="_nolegend_")
-ax.fill_between(df_sfer_prono.index,df_sfer_prono['e_pred_05'], df_sfer_prono['e_pred_95'],alpha=0.1,label='Banda de error')
-
-
-# Lineas: 1 , 1.5 y 2 mts
-xmin=df_sfer_prono.index.min()
-xmax=df_sfer_prono.index.max()
-
-
-plt.hlines(3.5, xmin, xmax, colors='r', linestyles='-.', label='Evacuación',linewidth=1.5)
-plt.hlines(3, xmin, xmax, colors='y', linestyles='-.', label='Alerta',linewidth=1.5)
-
-
-# fecha emision
-forecast_date = datetime.datetime.fromisoformat(serie_sfer_prono['forecast_date'].replace("Z", "")).replace(tzinfo=timezone.utc)
-plt.axvline(x=forecast_date,color="black", linestyle="--",linewidth=2)#,label='Fecha de emisión')
-
-bbox = dict(boxstyle="round", fc="0.7")
-arrowprops = dict(
-    arrowstyle="->",
-    connectionstyle="angle,angleA=0,angleB=90,rad=10")
-offset = 10
-
-
-xdisplay = ahora + timedelta(days=1.0)
-ax.annotate('Pronóstico a 4 días',
-    xy=(xdisplay, -0.8), xytext=(-8*offset, -offset), textcoords='offset points',
-    bbox=bbox, fontsize=18)#arrowprops=arrowprops
-
-xdisplay = ahora - timedelta(days=0.8)
-ax.annotate('Días pasados',
-    xy=(xdisplay, -0.8), xytext=(-8*offset, -offset), textcoords='offset points',
-    bbox=bbox, fontsize=18)
-
-
-ax.annotate(
-    'Fecha de emisión',
-    xy=(forecast_date - timedelta(days=0.01), -0.35),fontsize=15, xytext=(forecast_date + timedelta(days=0.45), -0.30), arrowprops=dict(facecolor='black',shrink=0.05)
-)
-
-
-nombre_estacion = 'San Fernando'
-cero = -0.53
-ylim=(-1,4)
-
-
-fig.subplots_adjust(bottom=0.205,right=0.7)
-plt.figtext(0,0,'          (*) Esta previsión surge de aplicar el Modelo Matemático del Delta del Programa de Hidráulica Computacional (PHC) de la Subgerencia \n          del Laboratorio de Hidráulica (SLH) del Instituto Nacional del Agua (INA), forzado por el caudal pronosticado del río Paraná de acuerdo \n          al Sistema de Información y Alerta Hidrológico (SIyAH-INA) y por el nivel del Río de la Plata en el arco San Fernando - Nueva Palmira \n          pronosticado por el Servicio de Hidrografía Naval (SHN) y el Servicio Meteorológico Nacional (SMN). Es una herramienta preliminar \n          de pronóstico para utilizar en la emergencia hídrica, que se irá ajustando en el tiempo para generar información más confiable. \n \n',fontsize=12,ha="left")
-if cero is not None:
-    plt.figtext(0,0,'          (**) El cero de la escala de ' + nombre_estacion + ' corresponde a ' + str(cero+0.53) +' mMOP / '+ str(cero) +' mIGN \n',fontsize=12,ha="left")
-if ylim:
-    ax.set_ylim(ylim[0],ylim[1])
-
-ax.set_xlim(xmin,xmax)
-ax.tick_params(labeltop=False, labelright=True)
-
-plt.grid(True, which='both', color='0.75', linestyle='-.',linewidth=0.5)
-plt.tick_params(axis='both', labelsize=16)
-plt.xlabel('Fecha', size=16)
-plt.ylabel('Nivel [m] Referido al cero local (**)', size=20)
-plt.legend(prop={'size':18},loc=2,ncol=2 )
-plt.title('Previsión de niveles a corto plazo en ' + nombre_estacion,fontsize=20)
-
-timezone = pytz.timezone('America/Argentina/Buenos_Aires')
-local_ahora = timezone.localize(ahora)
-
-#### TABLA
-h_resumen = [0,6,12,18]
-df_prono = df_sfer_prono[df_sfer_prono.index > local_ahora ].copy()
-# df_prono.set_index(df_prono['fecha'], inplace=True)
-df_prono['Hora'] = df_prono.index.hour
-df_prono['Dia'] = df_prono.index.day
-df_prono = df_prono[df_prono['Hora'].isin(h_resumen)].copy()
-
-#print(df_prono)
-df_prono['Y_predic'] = df_prono['adjusted'].round(2)
-df_prono['Hora'] = df_prono['Hora'].astype(str)
-df_prono['Hora'] = df_prono['Hora'].replace('0', '00')
-df_prono['Hora'] = df_prono['Hora'].replace('6', '06')
-df_prono['Dia'] = df_prono['Dia'].astype(str)
-df_prono['Fechap'] = df_prono['Dia']+' '+df_prono['Hora']+'hrs'
-
-df_prono = df_prono[['Fechap','Y_predic',]]
-#print(df_prono)
-cell_text = []
-
-for row in range(len(df_prono)):
-    cell_text.append(df_prono.iloc[row])
-    #print(cell_text)
-
-columns = ('Fecha','Nivel',)
-table = plt.table(cellText=cell_text,
-                  colLabels=columns,
-                  bbox = (1.08, 0, 0.2, 0.5))
-table.set_fontsize(12)
-#table.scale(2.5, 2.5)  # may help
-
-
-date_form = DateFormatter("%Hhrs \n %d-%b")
-ax.xaxis.set_major_formatter(date_form)
-ax.xaxis.set_minor_locator(mdates.HourLocator((0,6,12,18,))) #3,9,15,21,)))
-
-
-## FRANJAS VERTICALES
-df_sfer_prono['horas'] =  df_sfer_prono.index.hour
-list0hrs = df_sfer_prono[df_sfer_prono['horas']==0].index.tolist()
-ax.axvspan(list0hrs[0], list0hrs[1], alpha=0.1, color='grey')
-if len(list0hrs) >= 4:
-    ax.axvspan(list0hrs[2], list0hrs[3], alpha=0.1, color='grey')
-
-
-#plt.show()
-
-nameout = 'productos/Prono_SanFernando.png'
-plt.savefig(nameout, format='png')# , dpi=200, facecolor='w', edgecolor='w',bbox_inches = 'tight', pad_inches = 0
-plt.close()
-
-########################################################################################################################
-
-# pone timezone a fecha
-# for i in df_sfer_prono.index:
-#   df_sfer_prono.at[i,"fecha"] = df_sfer_prono.at[i,"fecha"].tz_localize("America/Argentina/Buenos_Aires")
-
-# df para UPSERT
-df_para_upsert = df_sfer_prono[['adjusted']].reset_index().rename(columns = {'fecha':'timestart', 'adjusted':'valor'},inplace = False)
-df_para_upsert['qualifier'] = 'main'
-df_para_upsert = pd.concat([df_para_upsert, df_sfer_prono[['e_pred_05']].reset_index().rename(columns = {'fecha':'timestart', 'e_pred_05': 'valor'})], ignore_index=True)
-df_para_upsert.fillna({'qualifier':'p05'},inplace=True)
-df_para_upsert = pd.concat([df_para_upsert, df_sfer_prono[['e_pred_25']].reset_index().rename(columns = {'fecha':'timestart', 'e_pred_25': 'valor'})], ignore_index=True)
-df_para_upsert.fillna({'qualifier':'p25'},inplace=True)
-df_para_upsert = pd.concat([df_para_upsert, df_sfer_prono[['e_pred_75']].reset_index().rename(columns = {'fecha':'timestart', 'e_pred_75': 'valor'})], ignore_index=True)
-df_para_upsert.fillna({'qualifier':'p75'},inplace=True)
-df_para_upsert = pd.concat([df_para_upsert, df_sfer_prono[['e_pred_95']].reset_index().rename(columns = {'fecha':'timestart', 'e_pred_95': 'valor'})], ignore_index=True)
-df_para_upsert.fillna({'qualifier':'p95'},inplace=True)
-df_para_upsert['timeend'] = df_para_upsert['timestart']  # .map(lambda a : a.isoformat())
-# ~ df_para_upsert['timestart'] = df_para_upsert['timestart'].map(lambda a : a.isoformat())
-# ~ print(df_para_upsert)
-para_upsert = {'forecast_date': forecast_date.isoformat(),
-			 'series': [
-				{
-					'series_table': 'series',
-					'series_id': 26202,
-					'pronosticos': json.loads(df_para_upsert.to_json(orient='records',date_format='iso'))
-				}
-			]}
-# ~ print(para_upsert)
-
-# UPSERT Simulado
+    # UPSERT Simulado
 
 def uploadProno(data,cal_id,responseOutputFile):
     response = requests.post(
@@ -410,6 +334,23 @@ def uploadProno(data,cal_id,responseOutputFile):
             outresponse.write(json.dumps(response.json()))
             outresponse.close()
 
-uploadProno(para_upsert,432,"productos/prono_sanFernando.json")
+def main():
+    parser = argparse.ArgumentParser(description="Ajusta prono en boca del Luján con obs en San Fernando, genera plot y guarda ajuste en DB")
+    parser.add_argument('-u', '--upload', action='store_true', help='Upload to database')
+    parser.add_argument('-o', '--output', required=False, help='Save result into file', default="productos/prono_sanFernando.json")
+    args = parser.parse_args()
+    
+    df_sfer_prono, forecast_date = readAdjustAndPlotProno()
+    para_upsert = dfToA5(df_sfer_prono, forecast_date)
+
+    if args.upload:
+        uploadProno(para_upsert,432,args.output)
+    else:
+        json.dump(para_upsert, open(args.output,"w",encoding="utf-8"))
+
+
+if __name__ == "__main__":
+    main()
+
 
 
