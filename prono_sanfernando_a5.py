@@ -10,10 +10,10 @@ Original file is located at
 
 # import psycopg2
 import datetime
-from datetime import timedelta
+from datetime import timedelta, timezone
 import pytz
 import pandas as pd
-import numpy as np
+# import numpy as np
 
 import matplotlib
 matplotlib.use('Agg')  # comentar para versiones más nuevas de matplotlib
@@ -261,7 +261,7 @@ plt.hlines(3, xmin, xmax, colors='y', linestyles='-.', label='Alerta',linewidth=
 
 
 # fecha emision
-forecast_date = datetime.datetime.fromisoformat(serie_sfer_prono['forecast_date'])
+forecast_date = datetime.datetime.fromisoformat(serie_sfer_prono['forecast_date'].replace("Z", "")).replace(tzinfo=timezone.utc)
 plt.axvline(x=forecast_date,color="black", linestyle="--",linewidth=2)#,label='Fecha de emisión')
 
 bbox = dict(boxstyle="round", fc="0.7")
