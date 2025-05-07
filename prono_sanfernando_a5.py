@@ -201,7 +201,7 @@ def readAdjustAndPlotProno(plots_auxiliares = False):
 
 
     xdisplay = ahora + timedelta(days=0.6)
-    ax.annotate('Pronóstico a 3 días',
+    ax.annotate('Pronóstico',
         xy=(xdisplay, -0.8), xytext=(-8*offset, -offset), textcoords='offset points',
         bbox=bbox, fontsize=18)#arrowprops=arrowprops
 
@@ -223,9 +223,7 @@ def readAdjustAndPlotProno(plots_auxiliares = False):
 
 
     fig.subplots_adjust(bottom=0.205,right=0.7)
-    plt.figtext(0,0,'          (*) Esta previsión surge de aplicar el Modelo Matemático del Delta del Programa de Hidráulica Computacional (PHC) de la Subgerencia \n          del Laboratorio de Hidráulica (SLH) del Instituto Nacional del Agua (INA), forzado por el caudal pronosticado del río Paraná de acuerdo \n          al Sistema de Información y Alerta Hidrológico (SIyAH-INA) y por el nivel del Río de la Plata en el arco San Fernando - Nueva Palmira \n          pronosticado por el Servicio de Hidrografía Naval (SHN) y el Servicio Meteorológico Nacional (SMN). Es una herramienta preliminar \n          de pronóstico para utilizar en la emergencia hídrica, que se irá ajustando en el tiempo para generar información más confiable. \n \n',fontsize=12,ha="left")
-    if cero is not None:
-        plt.figtext(0,0,'          (**) El cero de la escala de ' + nombre_estacion + ' corresponde a ' + str(cero+0.53) +' mMOP / '+ str(cero) +' mIGN \n',fontsize=12,ha="left")
+    plt.figtext(0,0,'          (*) Esta previsión surge de aplicar el Modelo Matemático del Delta del Programa de Hidráulica Computacional (PHC) de la Subgerencia \n          del Laboratorio de Hidráulica (SLH) del Instituto Nacional del Agua (INA), forzado por el caudal pronosticado del río Paraná de acuerdo \n          al Sistema de Información y Alerta Hidrológico (SIyAH-INA) y por el nivel del Río de la Plata en el arco San Fernando - Nueva Palmira \n          pronosticado por el Servicio de Hidrografía Naval (SHN) y el Servicio Meteorológico Nacional (SMN). \n          (**) El cero de la escala de ' + nombre_estacion + ' corresponde a ' + str(cero+0.53) +' mMOP / '+ str(cero) +' mIGN \n          (***) Debido a falla en la producción del pronóstico de nivel del Río de la Plata se está utilizando un modelo experimental \n          del proyecto Pronomar (https://www.cima.fcen.uba.ar/pm/) cuyo horizonte de pronóstico es de 72 hs.\n',fontsize=12,ha="left")
     if ylim:
         ax.set_ylim(ylim[0],ylim[1])
 
