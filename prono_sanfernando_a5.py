@@ -273,9 +273,9 @@ def readAdjustAndPlotProno(plots_auxiliares = False):
     #table.scale(2.5, 2.5)  # may help
 
 
-    date_form = DateFormatter("%Hhrs \n %d-%b")
+    date_form = DateFormatter("%Hhrs \n %d-%b", "America/Argentina/Buenos_Aires")
     ax.xaxis.set_major_formatter(date_form)
-    ax.xaxis.set_minor_locator(mdates.HourLocator((0,6,12,18,))) #3,9,15,21,)))
+    ax.xaxis.set_minor_locator(mdates.HourLocator((0,6,12,18,), tz="America/Argentina/Buenos_Aires")) #3,9,15,21,)))
 
 
     ## FRANJAS VERTICALES
@@ -284,6 +284,11 @@ def readAdjustAndPlotProno(plots_auxiliares = False):
     ax.axvspan(list0hrs[0], list0hrs[1], alpha=0.1, color='grey')
     if len(list0hrs) >= 4:
         ax.axvspan(list0hrs[2], list0hrs[3], alpha=0.1, color='grey')
+    if len(list0hrs) >= 5:
+        if len(list0hrs) >= 6:
+            ax.axvspan(list0hrs[4], list0hrs[5], alpha=0.1, color='grey')
+        else:
+            ax.axvspan(list0hrs[4], df_sfer_prono.index.max(), alpha=0.1, color='grey')
 
 
     #plt.show()
