@@ -52,7 +52,7 @@ client = Crud(config["api"]["url"], config["api"]["token"])
 #    print( "No se ha podido establecer conexion.")
 #    exit(1)
 
-def readAdjustAndPlotProno(plots_auxiliares = False):
+def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4):
     ahora = datetime.datetime.now()
     DaysMod = 15   
     f_fin = ahora
@@ -65,7 +65,7 @@ def readAdjustAndPlotProno(plots_auxiliares = False):
     # OBSERVADOS
     serie_sfer_obs = client.readSerie(series_id_margen_derecha, f_inicio, f_fin, "puntual")
     # PRONOSTICADOS
-    serie_sfer_prono = client.readSeriePronoConcat(707, 6066, "median", f_inicio, f_fin + timedelta(days=4)) 
+    serie_sfer_prono = client.readSeriePronoConcat(707, 6066, "median", f_inicio, f_fin + timedelta(days=forecast_horizon)) 
 
     df_sfer_obs = pd.DataFrame(serie_sfer_obs["observaciones"])[["timestart","valor"]].rename(columns={"timestart":"fecha","valor":"obs"})
     df_sfer_obs["fecha"] = pd.to_datetime(df_sfer_obs['fecha'])
@@ -76,6 +76,7 @@ def readAdjustAndPlotProno(plots_auxiliares = False):
     df_sfer_prono["fecha"] = pd.to_datetime(df_sfer_prono['fecha'])
     df_sfer_prono.set_index("fecha",inplace=True)
     df_sfer_prono.index = df_sfer_prono.index.tz_convert('America/Argentina/Buenos_Aires')
+    df_sfer_prono = df_sfer_prono[df_sfer_prono.index <= pytz.timezone('America/Argentina/Buenos_Aires').localize(f_fin) + timedelta(days=forecast_horizon)]
 
     indexUnico = pd.date_range(start=df_sfer_prono.index.min(), end=df_sfer_prono.index.max(), freq='15min')	    #Fechas desde f_inicio a f_fin con un paso de 5 minutos
     df_base = pd.DataFrame(index = indexUnico)								#Crea el Df con indexUnico
@@ -223,7 +224,7 @@ def readAdjustAndPlotProno(plots_auxiliares = False):
 
 
     fig.subplots_adjust(bottom=0.205,right=0.7)
-    plt.figtext(0,0,'          (*) Esta previsión surge de aplicar el Modelo Matemático del Delta del Programa de Hidráulica Computacional (PHC) de la Subgerencia \n          del Laboratorio de Hidráulica (SLH) del Instituto Nacional del Agua (INA), forzado por el caudal pronosticado del río Paraná de acuerdo \n          al Sistema de Información y Alerta Hidrológico (SIyAH-INA) y por el nivel del Río de la Plata en el arco San Fernando - Nueva Palmira \n          pronosticado por el Servicio de Hidrografía Naval (SHN) y el Servicio Meteorológico Nacional (SMN). \n          (**) El cero de la escala de ' + nombre_estacion + ' corresponde a ' + str(cero+0.53) +' mMOP / '+ str(cero) +' mIGN \n          (***) Debido a falla en la producción del pronóstico de nivel del Río de la Plata se está utilizando un modelo experimental \n          del proyecto Pronomar (https://www.cima.fcen.uba.ar/pm/) cuyo horizonte de pronóstico es de 72 hs.\n',fontsize=12,ha="left")
+    plt.figtext(0,0,'          (*) Esta previsión surge de aplicar el Modelo Matemático del Delta del Programa de Hidráulica Computacional (PHC) de la Subgerencia \n          del Laboratorio de Hidráulica (SLH) del Instituto Nacional del Agua (INA), forzado por el caudal pronosticado del río Paraná de acuerdo \n          al Sistema de Información y Alerta Hidrológico (SIyAH-INA) y por el nivel del Río de la Plata en el arco San Fernando - Nueva Palmira \n          pronosticado por el Servicio de Hidrografía Naval (SHN) y el Servicio Meteorológico Nacional (SMN). \n          (**) El cero de la escala de ' + nombre_estacion + ' corresponde a ' + str(cero+0.53) +' mMOP / '+ str(cero) +' mIGN \n          (***) Debido a falla en la producción del pronóstico de nivel del Río de la Plata se está utilizando un modelo experimental \n          del proyecto Pronomar (https://www.cima.fcen.uba.ar/pm/).\n',fontsize=12,ha="left")
     if ylim:
         ax.set_ylim(ylim[0],ylim[1])
 
@@ -280,13 +281,25 @@ def readAdjustAndPlotProno(plots_auxiliares = False):
     df_sfer_prono['horas'] =  df_sfer_prono.index.hour
     list0hrs = df_sfer_prono[df_sfer_prono['horas']==0].index.tolist()
     ax.axvspan(list0hrs[0], list0hrs[1], alpha=0.1, color='grey')
-    if len(list0hrs) >= 4:
-        ax.axvspan(list0hrs[2], list0hrs[3], alpha=0.1, color='grey')
-    if len(list0hrs) >= 5:
-        if len(list0hrs) >= 6:
-            ax.axvspan(list0hrs[4], list0hrs[5], alpha=0.1, color='grey')
+    i = 2
+    while i < len(list0hrs) - 1:
+        if len(list0hrs) >= i + 1:
+            ax.axvspan(list0hrs[i], list0hrs[i + 1], alpha=0.1, color='grey')
         else:
-            ax.axvspan(list0hrs[4], df_sfer_prono.index.max(), alpha=0.1, color='grey')
+            ax.axvspan(list0hrs[i], df_sfer_prono.index.max(), alpha=0.1, color='grey')
+        i = i + 2
+    # if len(list0hrs) >= 4:
+    #     ax.axvspan(list0hrs[2], list0hrs[3], alpha=0.1, color='grey')
+    # if len(list0hrs) >= 5:
+    #     if len(list0hrs) >= 6:
+    #         ax.axvspan(list0hrs[4], list0hrs[5], alpha=0.1, color='grey')
+    #     else:
+    #         ax.axvspan(list0hrs[4], df_sfer_prono.index.max(), alpha=0.1, color='grey')
+    # if len(list0hrs) >= 7:
+    #     if len(list0hrs) >= 8:
+    #         ax.axvspan(list0hrs[6], list0hrs[7], alpha=0.1, color='grey')
+    #     else:
+    #         ax.axvspan(list0hrs[6], df_sfer_prono.index.max(), alpha=0.1, color='grey')
 
 
     #plt.show()
