@@ -65,7 +65,9 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4)
     # OBSERVADOS
     serie_sfer_obs = client.readSerie(series_id_margen_derecha, f_inicio, f_fin, "puntual")
     # PRONOSTICADOS
-    serie_sfer_prono = client.readSeriePronoConcat(707, 6066, "median", f_inicio, f_fin + timedelta(days=forecast_horizon)) 
+    serie_sfer_prono = client.readSeriePronoConcat(707, 6066, "median", f_inicio, f_fin + timedelta(days=forecast_horizon))
+    # fecha emision
+    forecast_date = datetime.datetime.fromisoformat(serie_sfer_prono['forecast_date'].replace("Z", "")).replace(tzinfo=timezone.utc)
 
     df_sfer_obs = pd.DataFrame(serie_sfer_obs["observaciones"])[["timestart","valor"]].rename(columns={"timestart":"fecha","valor":"obs"})
     df_sfer_obs["fecha"] = pd.to_datetime(df_sfer_obs['fecha'])
@@ -76,8 +78,7 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4)
     df_sfer_prono["fecha"] = pd.to_datetime(df_sfer_prono['fecha'])
     df_sfer_prono.set_index("fecha",inplace=True)
     df_sfer_prono.index = df_sfer_prono.index.tz_convert('America/Argentina/Buenos_Aires')
-    df_sfer_prono = df_sfer_prono[df_sfer_prono.index <= pytz.timezone('America/Argentina/Buenos_Aires').localize(f_fin) + timedelta(days=forecast_horizon)]
-
+    
     indexUnico = pd.date_range(start=df_sfer_prono.index.min(), end=df_sfer_prono.index.max(), freq='15min')	    #Fechas desde f_inicio a f_fin con un paso de 5 minutos
     df_base = pd.DataFrame(index = indexUnico)								#Crea el Df con indexUnico
     df_base.index.rename('fecha', inplace=True)							    #Cambia nombre incide por Fecha
@@ -173,25 +174,25 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4)
     fig = plt.figure(figsize=(16, 12))
     ax = fig.add_subplot(1, 1, 1)
 
-    ax.plot(df_sfer_prono.index, df_sfer_prono['adjusted'], '-',color='b',label='Nivel Pronosticado (*)',linewidth=3)
+    df_plot = df_sfer_prono[df_sfer_prono.index <= forecast_date + timedelta(days=forecast_horizon)] # recorta horizonte de pronóstico
+
+    ax.plot(df_plot.index, df_plot['adjusted'], '-',color='b',label='Nivel Pronosticado (*)',linewidth=3)
 
     ax.plot(df_sfer_obs.index, df_sfer_obs['obs'],'o',color='k',label='Nivel Observado',linewidth=3)
     ax.plot(df_sfer_obs.index, df_sfer_obs['obs'],'-',color='k',linewidth=1,label="_altura")
 
 
-    ax.plot(df_sfer_prono.index, df_sfer_prono['e_pred_05'],'-',color='k',linewidth=0.5,alpha=0.75,label="_nolegend_")
-    ax.plot(df_sfer_prono.index, df_sfer_prono['e_pred_95'],'-',color='k',linewidth=0.5,alpha=0.75,label="_nolegend_")
-    ax.fill_between(df_sfer_prono.index,df_sfer_prono['e_pred_05'], df_sfer_prono['e_pred_95'],alpha=0.1,label='Banda de error')
+    ax.plot(df_plot.index, df_plot['e_pred_05'],'-',color='k',linewidth=0.5,alpha=0.75,label="_nolegend_")
+    ax.plot(df_plot.index, df_plot['e_pred_95'],'-',color='k',linewidth=0.5,alpha=0.75,label="_nolegend_")
+    ax.fill_between(df_plot.index,df_plot['e_pred_05'], df_plot['e_pred_95'],alpha=0.1,label='Banda de error')
 
     # Lineas: 1 , 1.5 y 2 mts
-    xmin=df_sfer_prono.index.min()
-    xmax=df_sfer_prono.index.max()
+    xmin=df_plot.index.min()
+    xmax=df_plot.index.max()
 
     plt.hlines(3.5, xmin, xmax, colors='r', linestyles='-.', label='Evacuación',linewidth=1.5)
     plt.hlines(3, xmin, xmax, colors='y', linestyles='-.', label='Alerta',linewidth=1.5)
 
-    # fecha emision
-    forecast_date = datetime.datetime.fromisoformat(serie_sfer_prono['forecast_date'].replace("Z", "")).replace(tzinfo=timezone.utc)
     plt.axvline(x=forecast_date,color="black", linestyle="--",linewidth=2)#,label='Fecha de emisión')
 
     bbox = dict(boxstyle="round", fc="0.7")
@@ -242,7 +243,7 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4)
 
     #### TABLA
     h_resumen = [0,6,12,18]
-    df_prono = df_sfer_prono[df_sfer_prono.index > local_ahora ].copy()
+    df_prono = df_plot[df_plot.index > local_ahora ].copy()
     # df_prono.set_index(df_prono['fecha'], inplace=True)
     df_prono['Hora'] = df_prono.index.hour
     df_prono['Dia'] = df_prono.index.day
@@ -278,15 +279,15 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4)
 
 
     ## FRANJAS VERTICALES
-    df_sfer_prono['horas'] =  df_sfer_prono.index.hour
-    list0hrs = df_sfer_prono[df_sfer_prono['horas']==0].index.tolist()
+    df_plot['horas'] =  df_plot.index.hour
+    list0hrs = df_plot[df_plot['horas']==0].index.tolist()
     ax.axvspan(list0hrs[0], list0hrs[1], alpha=0.1, color='grey')
     i = 2
-    while i < len(list0hrs) - 1:
-        if len(list0hrs) >= i + 1:
+    while i <= len(list0hrs) - 1:
+        if  i + 1 <= len(list0hrs) - 1:
             ax.axvspan(list0hrs[i], list0hrs[i + 1], alpha=0.1, color='grey')
         else:
-            ax.axvspan(list0hrs[i], df_sfer_prono.index.max(), alpha=0.1, color='grey')
+            ax.axvspan(list0hrs[i], df_plot.index.max(), alpha=0.1, color='grey')
         i = i + 2
     # if len(list0hrs) >= 4:
     #     ax.axvspan(list0hrs[2], list0hrs[3], alpha=0.1, color='grey')
@@ -294,12 +295,12 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4)
     #     if len(list0hrs) >= 6:
     #         ax.axvspan(list0hrs[4], list0hrs[5], alpha=0.1, color='grey')
     #     else:
-    #         ax.axvspan(list0hrs[4], df_sfer_prono.index.max(), alpha=0.1, color='grey')
+    #         ax.axvspan(list0hrs[4], df_plot.index.max(), alpha=0.1, color='grey')
     # if len(list0hrs) >= 7:
     #     if len(list0hrs) >= 8:
     #         ax.axvspan(list0hrs[6], list0hrs[7], alpha=0.1, color='grey')
     #     else:
-    #         ax.axvspan(list0hrs[6], df_sfer_prono.index.max(), alpha=0.1, color='grey')
+    #         ax.axvspan(list0hrs[6], df_plot.index.max(), alpha=0.1, color='grey')
 
 
     #plt.show()
