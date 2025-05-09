@@ -52,7 +52,7 @@ client = Crud(config["api"]["url"], config["api"]["token"])
 #    print( "No se ha podido establecer conexion.")
 #    exit(1)
 
-def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4):
+def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4, warmup_period : int = 1):
     ahora = datetime.datetime.now()
     DaysMod = 15   
     f_fin = ahora
@@ -174,7 +174,7 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4)
     fig = plt.figure(figsize=(16, 12))
     ax = fig.add_subplot(1, 1, 1)
 
-    df_plot = df_sfer_prono[df_sfer_prono.index <= forecast_date + timedelta(days=forecast_horizon)] # recorta horizonte de pronóstico
+    df_plot = df_sfer_prono[(df_sfer_prono.index <= forecast_date + timedelta(days=forecast_horizon)) & (df_sfer_prono.index >= forecast_date - timedelta(days=warmup_period))] # recorta warmup y horizonte de pronóstico
 
     ax.plot(df_plot.index, df_plot['adjusted'], '-',color='b',label='Nivel Pronosticado (*)',linewidth=3)
 
