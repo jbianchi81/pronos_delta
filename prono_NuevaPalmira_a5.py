@@ -1,3 +1,4 @@
+import argparse
 import json
 import datetime
 import requests
@@ -18,7 +19,7 @@ from matplotlib.dates import DateFormatter
 from sklearn import datasets, linear_model
 from sklearn.metrics import mean_squared_error, r2_score
 
-from pytz import timezone
+from pytz import timezone, utc
 localtz = timezone('America/Argentina/Buenos_Aires')
 
 
@@ -102,7 +103,7 @@ def cargasim(id_modelo,series_id, qualifier, forecast_timestart : datetime = dat
     #df_sim['fecha'] = df_sim.index
     # df_sim = df_sim.reset_index(drop=True)
     
-    return df_sim
+    return df_sim, datetime.fromisoformat(json_response['forecast_date'].replace("Z", "")).replace(tzinfo=utc)
 
 def plotFinal(df_obs,df_sim,nameout='productos/plot_final.png',titulo='puerto',ydisplay=1,xytext=(-300,-200),ylim=(-1,2.5),markersize=None,text_xoffset=(-8,-8),obs_label='Nivel Observado',extraObs=None,extraObsLabel='Nivel Observado 2', fecha_emision = None, bandaDeError=('e_pred_01','e_pred_99'),obsLine=False,nombre_estacion="Estación",niveles_alerta={}, cero=0):
     # if nombre_estacion != 'NuevaPalmira':
@@ -152,8 +153,8 @@ def plotFinal(df_obs,df_sim,nameout='productos/plot_final.png',titulo='puerto',y
         connectionstyle="angle,angleA=0,angleB=90,rad=10")
     offset = 10
     #xycoords='figure pixels',
-    xdisplay = ahora + timedelta(days=1.0)
-    ax.annotate('Pronóstico a 3 días',
+    xdisplay = ahora + timedelta(hours=12)
+    ax.annotate('Pronóstico a 4 días',
         xy=(xdisplay, ydisplay), xytext=(text_xoffset[0]*offset, -offset), textcoords='offset points',
         bbox=bbox, fontsize=18)#arrowprops=arrowprops
     xdisplay = ahora - timedelta(days=2)
@@ -281,7 +282,7 @@ def uploadPronoSeries(series,cal_id=440,forecast_date=datetime.now(),outputfile=
         outputjson(data,outputfile)
     uploadProno(data,cal_id,responseOutputFile)
 
-def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
+def corrigeNuevaPalmira(plots=False,upload=True,output_csv=None, forecast_horizon : int = 4, warmup_period : int = 1):
     ## Consulta id de las corridas
     id_modelo = 707 # 308 
     estacion_id = 1843
@@ -291,23 +292,23 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
     ahora = datetime.now(pytz.timezone('America/Argentina/Buenos_Aires')).replace(hour=0, minute=0, second=0, microsecond=0)
     fecha_pronos_calib = ahora - timedelta(days=7) # Corrige con los ultimos x días
 
-    ##################### Conulta Simulado #####################
+    ##################### Consulta Simulado #####################
 
     # 1 - Consulta ID Corridas
-    json_res = Consulta_id_corridas(id_modelo)
-    print('Cantidad de corridas: ',len(json_res))
+    # json_res = Consulta_id_corridas(id_modelo)
+    # print('Cantidad de corridas: ',len(json_res))
     
-    lst_corridas = []
-    lst_pronoday = []
-    for corridas in range(len(json_res)):
-        lst_corridas.append(json_res[corridas]['id'])
-        lst_pronoday.append(json_res[corridas]['forecast_date'])
-    df_id = pd.DataFrame(lst_pronoday, index =lst_corridas,columns=['forecast_date',])
-    df_id['forecast_date'] = pd.to_datetime(df_id['forecast_date'])
-    df_id = df_id[df_id['forecast_date']>fecha_pronos_calib]            # Filtra las corridas viejas
+    # lst_corridas = []
+    # lst_pronoday = []
+    # for corridas in range(len(json_res)):
+    #     lst_corridas.append(json_res[corridas]['id'])
+    #     lst_pronoday.append(json_res[corridas]['forecast_date'])
+    # df_id = pd.DataFrame(lst_pronoday, index =lst_corridas,columns=['forecast_date',])
+    # df_id['forecast_date'] = pd.to_datetime(df_id['forecast_date'])
+    # df_id = df_id[df_id['forecast_date']>fecha_pronos_calib]            # Filtra las corridas viejas
 
     # 2 - Consulta Corridas
-    df_base_unico = cargasim(id_modelo, series_id_sim, qualifier)
+    df_base_unico, fecha_emision = cargasim(id_modelo, series_id_sim, qualifier)
 
     # for index, row in df_id.iterrows():                         # Carga las series simuladas usnado los ID de las corridas
     #     df_corr_i = cargasim(id_modelo,index,estacion_id)
@@ -411,11 +412,11 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
     #############   Pronóstico  #############
     
     # Cosulta ultimo prono sin corregir
-    index = df_id.index.max()
-    fecha_emision = df_id.loc[index,'forecast_date']
+    # index = df_id.index.max()
+    # fecha_emision = df_id.loc[index,'forecast_date']
 
 
-    df_last_prono = cargasim(id_modelo, series_id_sim, qualifier)
+    df_last_prono, f_d = cargasim(id_modelo, series_id_sim, qualifier, fecha_emision - timedelta(days=warmup_period))
     
     # pd.DataFrame(columns=['h_sim','cor_id'])
     # df_id_last = df_id[-4:]
@@ -467,13 +468,14 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
     df_Obs = df_obs_npal[['h_obs',]]    # df_Obs = df_Obs.rename(columns={'NuevaPalmira':'h_obs'})
     df_Sim = df_last_prono[['Y_predic','e_pred_01','e_pred_99']].copy()
     df_Sim.index = df_Sim.index.to_pydatetime()
+    df_Sim = df_Sim[(df_Sim.index <= fecha_emision + timedelta(days=forecast_horizon)) & (df_Sim.index >= fecha_emision - timedelta(days=warmup_period))]
     df_Sim['fecha'] = df_Sim.index
 
     # PLOT FINAL
     plotFinal(df_Obs,df_Sim,ydisplay=3.4,text_xoffset=(0.5,0.5),ylim=(-0.5,3.5),nameout='productos/Prono_NPalmira.png',nombre_estacion="NuevaPalmira",cero=None,fecha_emision=fecha_emision)
 
-    if output_csv:
-        outputcsv(df_Sim,"productos/prono_NuevaPalmira.csv")
+    if output_csv is not None:
+        outputcsv(df_Sim,output_csv)
 
     series = [
         prono2serie(df_Sim,main_colname="Y_predic",members={'e_pred_01':'p01','e_pred_99':'p99'},series_id=26203)
@@ -486,8 +488,20 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=True):
         data = prono2json(series,forecast_date=fecha_emision)
         outputjson(data,"productos/prono_NuevaPalmira.json")
 
+def main():
+    parser = argparse.ArgumentParser(description="Ajusta prono en boca del Luján con obs en San Fernando, genera plot y guarda ajuste en DB")
+    parser.add_argument('-u', '--upload', action='store_true', help='Upload to database')
+    parser.add_argument('-o', '--output', required=False, help='Save result into file', default="productos/prono_NuevaPalmira.csv")
+    args = parser.parse_args()
+    
+
+    corrigeNuevaPalmira(plots=False,upload=args.upload,output_csv=args.output)
+
 if __name__ == "__main__":
-    corrigeNuevaPalmira(plots=False,upload=True,output_csv=True)
+    main()
+
+
+
 
 
 
