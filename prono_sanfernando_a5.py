@@ -52,7 +52,7 @@ client = Crud(config["api"]["url"], config["api"]["token"])
 #    print( "No se ha podido establecer conexion.")
 #    exit(1)
 
-def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4, warmup_period : int = 1):
+def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4, warmup_period : int = 1, cal_id : int = 707, prono_series_id : int = 6066, qualifier : str = "median"):
     ahora = datetime.datetime.now()
     DaysMod = 15   
     f_fin = ahora
@@ -65,7 +65,8 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4,
     # OBSERVADOS
     serie_sfer_obs = client.readSerie(series_id_margen_derecha, f_inicio, f_fin, "puntual")
     # PRONOSTICADOS
-    serie_sfer_prono = client.readSeriePronoConcat(707, 6066, "median", f_inicio, f_fin + timedelta(days=forecast_horizon))
+    serie_sfer_prono = client.readSeriePronoConcat(cal_id, prono_series_id, qualifier, f_inicio, f_fin + timedelta(days=forecast_horizon))
+    # serie_sfer_prono = client.readSeriePronoConcat(308, 6066, "main", f_inicio, f_fin + timedelta(days=forecast_horizon))
     # fecha emision
     forecast_date = datetime.datetime.fromisoformat(serie_sfer_prono['forecast_date'].replace("Z", "")).replace(tzinfo=timezone.utc)
 
@@ -357,9 +358,15 @@ def main():
     parser = argparse.ArgumentParser(description="Ajusta prono en boca del Luján con obs en San Fernando, genera plot y guarda ajuste en DB")
     parser.add_argument('-u', '--upload', action='store_true', help='Upload to database')
     parser.add_argument('-o', '--output', required=False, help='Save result into file', default="productos/prono_sanFernando.json")
+    parser.add_argument('-c','--cal-id', required=False, help='identificador de calibrado', default=707)
+    parser.add_argument('-s','--prono-series-id', required=False, help='identificador de serie pronosticada', default=6066)
+    parser.add_argument('-q','--qualifier', required=False, help='calificador de pronostico', default="median")
+    parser.add_argument('-f','--forecast-horizon', required=False, help='Horizonte de pronóstico (días)',default=4)
+    parser.add_argument('-w','--warmup-period', required=False, help='Periodo de calienamiento (días)', default=1)
+
     args = parser.parse_args()
     
-    df_sfer_prono, forecast_date = readAdjustAndPlotProno()
+    df_sfer_prono, forecast_date = readAdjustAndPlotProno(forecast_horizon=args.forecast_horizon, warmup_period=args.warmup_period, cal_id=args.cal_id, prono_series_id=args.prono_series_id, qualifier=args.qualifier)
     para_upsert = dfToA5(df_sfer_prono, forecast_date)
 
     if args.upload:
