@@ -282,12 +282,12 @@ def uploadPronoSeries(series,cal_id=440,forecast_date=datetime.now(),outputfile=
         outputjson(data,outputfile)
     uploadProno(data,cal_id,responseOutputFile)
 
-def corrigeNuevaPalmira(plots=False,upload=True,output_csv=None, forecast_horizon : int = 4, warmup_period : int = 1):
+def corrigeNuevaPalmira(plots=False,upload=True,output_csv=None, forecast_horizon : int = 4, warmup_period : int = 1,  cal_id : int = 308, prono_series_id : int = 6071, qualifier : str = "main", plot_file : str = "productos/Prono_NPalmira.png", output_series_id : int = 26203, output_cal_id : int = 433):
     ## Consulta id de las corridas
-    id_modelo = 707 # 308 
-    estacion_id = 1843
-    series_id_sim = 6071
-    qualifier = "median"
+    # cal_id = 707 # 308 
+    # estacion_id = 1843
+    # prono_series_id = 6071
+    # qualifier = "median"
 
     ahora = datetime.now(pytz.timezone('America/Argentina/Buenos_Aires')).replace(hour=0, minute=0, second=0, microsecond=0)
     fecha_pronos_calib = ahora - timedelta(days=7) # Corrige con los ultimos x días
@@ -308,7 +308,7 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=None, forecast_horizo
     # df_id = df_id[df_id['forecast_date']>fecha_pronos_calib]            # Filtra las corridas viejas
 
     # 2 - Consulta Corridas
-    df_base_unico, fecha_emision = cargasim(id_modelo, series_id_sim, qualifier)
+    df_base_unico, fecha_emision = cargasim(cal_id, prono_series_id, qualifier)
 
     # for index, row in df_id.iterrows():                         # Carga las series simuladas usnado los ID de las corridas
     #     df_corr_i = cargasim(id_modelo,index,estacion_id)
@@ -416,7 +416,7 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=None, forecast_horizo
     # fecha_emision = df_id.loc[index,'forecast_date']
 
 
-    df_last_prono, f_d = cargasim(id_modelo, series_id_sim, qualifier, fecha_emision - timedelta(days=warmup_period))
+    df_last_prono, f_d = cargasim(cal_id, prono_series_id, qualifier, fecha_emision - timedelta(days=warmup_period))
     
     # pd.DataFrame(columns=['h_sim','cor_id'])
     # df_id_last = df_id[-4:]
@@ -472,18 +472,18 @@ def corrigeNuevaPalmira(plots=False,upload=True,output_csv=None, forecast_horizo
     df_Sim['fecha'] = df_Sim.index
 
     # PLOT FINAL
-    plotFinal(df_Obs,df_Sim,ydisplay=3.4,text_xoffset=(0.5,0.5),ylim=(-0.5,3.5),nameout='productos/Prono_NPalmira.png',nombre_estacion="NuevaPalmira",cero=None,fecha_emision=fecha_emision)
+    plotFinal(df_Obs,df_Sim,ydisplay=3.4,text_xoffset=(0.5,0.5),ylim=(-0.5,3.5),nameout=plot_file,nombre_estacion="NuevaPalmira",cero=None,fecha_emision=fecha_emision)
 
     if output_csv is not None:
         outputcsv(df_Sim,output_csv)
 
     series = [
-        prono2serie(df_Sim,main_colname="Y_predic",members={'e_pred_01':'p01','e_pred_99':'p99'},series_id=26203)
+        prono2serie(df_Sim,main_colname="Y_predic",members={'e_pred_01':'p01','e_pred_99':'p99'},series_id=output_series_id)
     ]
 
     ## UPLOAD PRONOSTICO
     if upload:
-        uploadPronoSeries(series,cal_id=433,forecast_date=fecha_emision,outputfile="productos/prono_NuevaPalmira.json",responseOutputFile="productos/pronoresponse.json")
+        uploadPronoSeries(series,cal_id=output_cal_id,forecast_date=fecha_emision,outputfile="productos/prono_NuevaPalmira.json",responseOutputFile="productos/pronoresponse.json")
     else:
         data = prono2json(series,forecast_date=fecha_emision)
         outputjson(data,"productos/prono_NuevaPalmira.json")
@@ -492,10 +492,21 @@ def main():
     parser = argparse.ArgumentParser(description="Ajusta prono en boca del Luján con obs en San Fernando, genera plot y guarda ajuste en DB")
     parser.add_argument('-u', '--upload', action='store_true', help='Upload to database')
     parser.add_argument('-o', '--output', required=False, help='Save result into file', default="productos/prono_NuevaPalmira.csv")
+    parser.add_argument('-c','--cal-id', type=int, required=False, help='identificador de calibrado de entrada', default=308)
+    parser.add_argument('-s','--prono-series-id', type=int, required=False, help='identificador de serie pronosticada de entrada', default=6071)
+    parser.add_argument('-q','--qualifier', required=False, help='calificador de pronostico', default="main")
+    parser.add_argument('-f','--forecast-horizon', type=int, required=False, help='Horizonte de pronóstico (días)',default=4)
+    parser.add_argument('-w','--warmup-period', type=int, required=False, help='Periodo de calienamiento (días)', default=1)
+    parser.add_argument('-S','--output-series-id', type=int, required=False, help='identificador de serie pronosticada de salida', default=26203)
+    parser.add_argument('-C','--output-cal-id', type=int, required=False, help='identificador de calibrado de salida', default=433)
+    parser.add_argument('-p', '--plot_file', required=False, help='Save plot into file', default="productos/Prono_NPalmira.png")
     args = parser.parse_args()
-    
 
-    corrigeNuevaPalmira(plots=False,upload=args.upload,output_csv=args.output)
+    # cal_id : int = 308, prono_series_id : int = 6071, qualifier : str = "main", plot_file : str = "productos/Prono_NPalmira.png", output_series_id : int = 26203, output_cal_id : int = 433):
+
+    # cal_id : int = 707, prono_series_id : int = 6071, qualifier : str = "median", plot_file : str = "productos/Prono_NPalmira_707.png", output_series_id : int = 26203, output_cal_id : int = 709):
+
+    corrigeNuevaPalmira(plots=False,upload=args.upload,output_csv=args.output, forecast_horizon=args.forecast_horizon, warmup_period=args.warmup_period, cal_id=args.cal_id, prono_series_id=args.prono_series_id, qualifier=args.qualifier, plot_file = args.plot_file, output_series_id=args.output_series_id,output_cal_id=args.output_cal_id)
 
 if __name__ == "__main__":
     main()
