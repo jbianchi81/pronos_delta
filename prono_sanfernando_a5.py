@@ -359,7 +359,7 @@ def uploadProno(data,cal_id,responseOutputFile):
 def main():
     parser = argparse.ArgumentParser(description="Ajusta prono en boca del Luján con obs en San Fernando, genera plot y guarda ajuste en DB")
     parser.add_argument('-u', '--upload', action='store_true', help='Upload to database')
-    parser.add_argument('-o', '--output', required=False, help='Save result into file', default="productos/prono_sanFernando.json")
+    parser.add_argument('-o', '--output', required=False, help='Save result into file', default="productos/Prono_SanFernando.json")
     parser.add_argument('-c','--cal-id', type=int, required=False, help='identificador de calibrado de entrada', default=308)
     parser.add_argument('-s','--prono-series-id', type=int, required=False, help='identificador de serie pronosticada de entrada', default=6066)
     parser.add_argument('-q','--qualifier', required=False, help='calificador de pronostico', default="main")
@@ -367,7 +367,7 @@ def main():
     parser.add_argument('-w','--warmup-period', type=int, required=False, help='Periodo de calienamiento (días)', default=1)
     parser.add_argument('-S','--output-series-id', type=int, required=False, help='identificador de serie pronosticada de salida', default=26202)
     parser.add_argument('-C','--output-cal-id', type=int, required=False, help='identificador de calibrado de salida', default=432)
-    parser.add_argument('-p', '--plot_file', required=False, help='Save plot into file', default="productos/prono_SanFernando.png")
+    parser.add_argument('-p', '--plot_file', required=False, help='Save plot into file', default="productos/Prono_SanFernando.png")
 
     # pronomar: -c 707 -q median -C 708 -p prono_sanFernando_707.png -u
 
