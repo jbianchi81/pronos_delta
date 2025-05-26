@@ -52,7 +52,7 @@ client = Crud(config["api"]["url"], config["api"]["token"])
 #    print( "No se ha podido establecer conexion.")
 #    exit(1)
 
-def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4, warmup_period : int = 1, cal_id : int = 707, prono_series_id : int = 6066, qualifier : str = "median"):
+def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4, warmup_period : int = 1, cal_id : int = 308, prono_series_id : int = 6066, qualifier : str = "main", plot_file : str = "productos/Prono_SanFernando.png"): # cal_id=707, qualifier="median"
     ahora = datetime.datetime.now()
     DaysMod = 15   
     f_fin = ahora
@@ -65,7 +65,9 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4,
     # OBSERVADOS
     serie_sfer_obs = client.readSerie(series_id_margen_derecha, f_inicio, f_fin, "puntual")
     # PRONOSTICADOS
-    serie_sfer_prono = client.readSeriePronoConcat(cal_id, prono_series_id, qualifier, f_inicio, f_fin + timedelta(days=forecast_horizon))
+    serie_sfer_prono = client.readSeriePronoConcat(int(cal_id), int(prono_series_id), qualifier, f_inicio, f_fin + timedelta(days=forecast_horizon))
+    if not len(serie_sfer_prono["pronosticos"]):
+        raise ValueError("No se encontraron pronósticos de cal_id=%i, series_id=%i, qualifier=%s, fecha inicio=%s, fecha fin=%s" % (cal_id, prono_series_id, qualifier, f_inicio.isoformat(), (f_fin + timedelta(days=forecast_horizon)).isoformat()))
     # serie_sfer_prono = client.readSeriePronoConcat(308, 6066, "main", f_inicio, f_fin + timedelta(days=forecast_horizon))
     # fecha emision
     forecast_date = datetime.datetime.fromisoformat(serie_sfer_prono['forecast_date'].replace("Z", "")).replace(tzinfo=timezone.utc)
@@ -307,13 +309,13 @@ def readAdjustAndPlotProno(plots_auxiliares = False, forecast_horizon : int = 4,
     #plt.show()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    png_path = os.path.join(script_dir, 'productos', 'Prono_SanFernando.png')
+    png_path = os.path.join(script_dir, plot_file) # 'productos', 'Prono_SanFernando.png')
     plt.savefig(png_path, format='png')# , dpi=200, facecolor='w', edgecolor='w',bbox_inches = 'tight', pad_inches = 0
     plt.close()
 
     return df_sfer_prono, forecast_date
 
-def dfToA5(df_sfer_prono, forecast_date) -> dict:
+def dfToA5(df_sfer_prono, forecast_date, output_series_id : int = 26202) -> dict:
     # df para UPSERT
     df_para_upsert = df_sfer_prono[['adjusted']].reset_index().rename(columns = {'fecha':'timestart', 'adjusted':'valor'},inplace = False)
     df_para_upsert['qualifier'] = 'main'
@@ -332,7 +334,7 @@ def dfToA5(df_sfer_prono, forecast_date) -> dict:
                 'series': [
                     {
                         'series_table': 'series',
-                        'series_id': 26202,
+                        'series_id': output_series_id,
                         'pronosticos': json.loads(df_para_upsert.to_json(orient='records',date_format='iso'))
                     }
                 ]}
@@ -358,19 +360,25 @@ def main():
     parser = argparse.ArgumentParser(description="Ajusta prono en boca del Luján con obs en San Fernando, genera plot y guarda ajuste en DB")
     parser.add_argument('-u', '--upload', action='store_true', help='Upload to database')
     parser.add_argument('-o', '--output', required=False, help='Save result into file', default="productos/prono_sanFernando.json")
-    parser.add_argument('-c','--cal-id', required=False, help='identificador de calibrado', default=707)
-    parser.add_argument('-s','--prono-series-id', required=False, help='identificador de serie pronosticada', default=6066)
-    parser.add_argument('-q','--qualifier', required=False, help='calificador de pronostico', default="median")
-    parser.add_argument('-f','--forecast-horizon', required=False, help='Horizonte de pronóstico (días)',default=4)
-    parser.add_argument('-w','--warmup-period', required=False, help='Periodo de calienamiento (días)', default=1)
+    parser.add_argument('-c','--cal-id', type=int, required=False, help='identificador de calibrado de entrada', default=308)
+    parser.add_argument('-s','--prono-series-id', type=int, required=False, help='identificador de serie pronosticada de entrada', default=6066)
+    parser.add_argument('-q','--qualifier', required=False, help='calificador de pronostico', default="main")
+    parser.add_argument('-f','--forecast-horizon', type=int, required=False, help='Horizonte de pronóstico (días)',default=4)
+    parser.add_argument('-w','--warmup-period', type=int, required=False, help='Periodo de calienamiento (días)', default=1)
+    parser.add_argument('-S','--output-series-id', type=int, required=False, help='identificador de serie pronosticada de salida', default=26202)
+    parser.add_argument('-C','--output-cal-id', type=int, required=False, help='identificador de calibrado de salida', default=432)
+    parser.add_argument('-p', '--plot_file', required=False, help='Save plot into file', default="productos/prono_SanFernando.png")
+
+    # pronomar: -c 707 -q median -C 708 -p prono_sanFernando_707.png -u
+
 
     args = parser.parse_args()
     
-    df_sfer_prono, forecast_date = readAdjustAndPlotProno(forecast_horizon=args.forecast_horizon, warmup_period=args.warmup_period, cal_id=args.cal_id, prono_series_id=args.prono_series_id, qualifier=args.qualifier)
-    para_upsert = dfToA5(df_sfer_prono, forecast_date)
+    df_sfer_prono, forecast_date = readAdjustAndPlotProno(forecast_horizon=args.forecast_horizon, warmup_period=args.warmup_period, cal_id=args.cal_id, prono_series_id=args.prono_series_id, qualifier=args.qualifier, plot_file = args.plot_file)
+    para_upsert = dfToA5(df_sfer_prono, forecast_date, args.output_series_id)
 
     if args.upload:
-        uploadProno(para_upsert,432,args.output)
+        uploadProno(para_upsert,args.output_cal_id,args.output)
     else:
         json.dump(para_upsert, open(args.output,"w",encoding="utf-8"))
 
