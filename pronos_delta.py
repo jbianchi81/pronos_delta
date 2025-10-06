@@ -241,6 +241,10 @@ def GeneraGrafico(DicEst,plots=False, upload=True, output_csv=False):
     # Elimina saltos
     df_Obs = eliminaSaltos(df_Obs,umbral_salto)
 
+    # check null obs
+    if not len(df_Obs):
+        raise ValueError("No hay observaciones")
+
     ## Union
     df = df_sim.join(df_Obs, how = 'outer')
     df['h_sim'] = df['h_sim'].interpolate(method='linear',limit=4)
@@ -340,7 +344,10 @@ def runPlan(plan,plots=True,upload=False,output_csv=False):
                 print("Skipping plan " + str(key) + ".")
                 continue
             print("Running plan " + key + ".")
-            GeneraGrafico(config_estaciones[key],plots,upload,output_csv)
+            try:
+                GeneraGrafico(config_estaciones[key],plots,upload,output_csv)
+            except ValueError as e:
+                print(f"Error al ejecutar el plan {key}: {e}")
     elif plan in config_estaciones:
         GeneraGrafico(config_estaciones[plan],plots,upload,output_csv)
     else:
