@@ -173,7 +173,7 @@
         "cero": -0.53,
         "cal_id_sim": 288,
         "estacion_id": "151",
-        "serie_obs": 151,
+        "serie_obs": 44026,
         "umbral_salto": 0.25,
         "name_file": "productos/Prono_Lima",
         "serie_upload": 3403,
@@ -182,7 +182,9 @@
             4.5
         ],
         "niveles_alerta": {},
-        "cal_id": 446
+        "cal_id": 446,
+        "y_offset": 1.67,
+        "scale": 1.02
     },
     "campana": {
         "nombre": "Campana",

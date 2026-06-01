@@ -222,6 +222,9 @@ def GeneraGrafico(DicEst,plots=False, upload=True, output_csv=False):
     cal_id_sim = DicEst['cal_id_sim']
     cal_id_save = DicEst['cal_id']
 
+    y_offset = DicEst['y_offset'] if "y_offset" in DicEst else 0
+    scale = DicEst['scale'] if "scale" in DicEst else 1
+
     ## Carga Simulados
     try:
         df_sim, fecha_emision = getLastProno(cal_id_sim,{'estacion_id':estacion_id ,
@@ -237,6 +240,7 @@ def GeneraGrafico(DicEst,plots=False, upload=True, output_csv=False):
 
     # Estaciones a consultar
     df_Obs = getObs(serie_obs,f_inicio,f_fin)
+    df_Obs["h_obs"] = df_Obs["h_obs"] * scale + y_offset
 
     # Elimina saltos
     df_Obs = eliminaSaltos(df_Obs,umbral_salto)
