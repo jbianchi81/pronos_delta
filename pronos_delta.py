@@ -1,5 +1,5 @@
 import sys, getopt
-import requests#, psycopg2
+import requests
 import pandas as pd
 import numpy as np
 import logging
@@ -298,7 +298,7 @@ def GeneraGrafico(DicEst,plots=False, upload=True, output_csv=False):
         df['e_pred_99'] = df['Y_predic'] + quant_Err[0.999]
 
     # SERIE upload 
-    series = [prono2serie(df,main_colname="Y_predic",
+    series = [prono2serie(df[df.index.isin(df_sim.index)],main_colname="Y_predic",
                           members={'e_pred_01':'p01','e_pred_99':'p99'},
                           series_id=serie_upload)]
 
