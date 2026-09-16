@@ -134,7 +134,7 @@
         ],
         "niveles_alerta": {},
         "cal_id": 439,
-        "desactivar": true
+        "desactivar": false
     },
     "blargo": {
         "nombre": "Brazo Largo",
